@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/*
+ * Aarohan 2026 theme — Indian street-poster feel:
+ * deep crimson walls, mustard plaques, teal accents, cream paper panels.
+ */
+
+@theme {
+  --color-crimson: #a3242b;
+  --color-crimson-deep: #7e161b;
+  --color-crimson-dark: #5c0f13;
+  --color-mustard: #f0a82f;
+  --color-saffron: #e07b2a;
+  --color-teal: #2fa79f;
+  --color-teal-dark: #18616a;
+  --color-cream: #f7e8ca;
+  --color-cream-dim: #e8d5ae;
+  --color-ink: #401012;
+
+  --font-display: "Yatra One", "Anton", system-ui, sans-serif;
+  --font-block: "Anton", "Arial Black", sans-serif;
+  --font-body: "Nunito", system-ui, sans-serif;
+}
+
+/* layered paper texture on crimson (poster wall feel) — login page only */
+.wall {
+  background-color: var(--color-crimson);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 15% 8%, rgba(255, 210, 120, 0.08), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 88% 90%, rgba(20, 70, 75, 0.18), transparent 60%),
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(0, 0, 0, 0.22) 45%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 70% 65%, rgba(0, 0, 0, 0.18) 45%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 40% 85%, rgba(0, 0, 0, 0.16) 45%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 85% 20%, rgba(0, 0, 0, 0.2) 45%, transparent 55%);
+  background-size: auto, auto, 37px 37px, 43px 43px, 53px 53px, 61px 61px;
+}
+
+/* warm beige with subtle paper grain — the app background */
+.beige {
+  background-color: #e9dcc2;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 10% 5%, rgba(255, 255, 255, 0.35), transparent 55%),
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(64, 16, 18, 0.07) 45%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 70% 65%, rgba(64, 16, 18, 0.06) 45%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 40% 85%, rgba(64, 16, 18, 0.05) 45%, transparent 55%),
+    radial-gradient(1.5px 1.5px at 85% 20%, rgba(64, 16, 18, 0.07) 45%, transparent 55%);
+  background-size: auto, 37px 37px, 43px 43px, 53px 53px, 61px 61px;
+}
+
+/* cream paper panel */
+.paper {
+  background:
+    radial-gradient(1px 1px at 25% 65%, rgba(120, 60, 20, 0.05) 45%, transparent 55%),
+    radial-gradient(1px 1px at 75% 20%, rgba(120, 60, 20, 0.05) 45%, transparent 55%),
+    var(--color-cream);
+  background-size: 31px 31px, 47px 47px, auto;
+}
+
+/* torn paper edge, used on login panel top */
+.torn-b::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  bottom: -14px;
+  height: 18px;
+  background: var(--color-cream);
+  clip-path: polygon(
+    0% 0%, 4% 58%, 8% 30%, 13% 66%, 18% 38%, 24% 72%, 30% 40%, 36% 70%,
+    42% 34%, 48% 66%, 54% 36%, 60% 70%, 66% 40%, 72% 68%, 78% 36%, 84% 62%,
+    90% 32%, 95% 56%, 100% 12%, 100% 0%
+  );
+}
+
+/* mustard plaque button: poster-style framed label */
+.plaque {
+  position: relative;
+  border: 2px solid var(--color-teal-dark);
+  box-shadow: 0 0 0 4px var(--color-mustard), 0 4px 0 4px var(--color-crimson-dark);
+  outline: 1px solid rgba(92, 15, 19, 0.35);
+}
+
+/* big wordmark: mustard fill, teal + crimson layered offsets */
+.wordmark {
+  font-family: var(--font-display);
+  color: var(--color-mustard);
+  text-shadow:
+    3px 3px 0 var(--color-teal-dark),
+    6px 6px 0 var(--color-crimson-dark);
+  letter-spacing: 0.06em;
+}
+
+/* hero wordmark on the login poster — maroon extrude like Image 1 */
+.hero-word {
+  color: #e8a63c;
+  text-shadow:
+    4px 4px 0 #7a1219,
+    8px 8px 0 rgba(0, 0, 0, 0.18);
+  letter-spacing: 0.02em;
+  transform: rotate(-1.5deg);
+}
+
+/* the REGISTER plaque */
+.register-plaque {
+  border: 3px solid #18616a;
+  box-shadow: 0 0 0 5px #2fa79f, 0 6px 0 5px #5c0f13;
+}
+
+/* ---------- poster artwork placement (login page, from posterArt.ts) ---------- */
+
+.poster .scene-bg svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.poster .tear-wrap svg,
+.poster .tear {
+  display: block;
+  width: 100%;
+  height: 26px;
+}
+
+.poster .art svg {
+  display: block;
+  height: auto;
+}
+
+/* wordmark-side flourishes */
+.poster .flourish-a svg { width: 128px; margin-inline: auto; }
+.poster .flourish-b svg { width: 128px; margin-inline: auto; }
+
+/* side splashes + sprigs */
+.poster .splash-l { position: absolute; left: 1.5%; bottom: 30%; width: 84px; opacity: 0.95; }
+.poster .splash-r { position: absolute; right: 1%; bottom: 26%; width: 108px; opacity: 0.95; }
+.poster .sprig-l { position: absolute; left: 3%; top: 24%; width: 62px; }
+.poster .sprig-r { position: absolute; right: 3.5%; top: 21%; width: 62px; }
+
+@media (max-width: 700px) {
+  .poster .splash-l { width: 54px; }
+  .poster .splash-r { width: 66px; }
+  .poster .sprig-l, .poster .sprig-r { display: none; }
+}
+
+body {
+  font-family: var(--font-body);
+}
