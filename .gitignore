@@ -5,3 +5,7 @@ backend/*.db
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

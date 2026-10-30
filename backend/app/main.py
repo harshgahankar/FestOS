@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app import db as db_mod
 from app.routers import auth as auth_router, imports as imports_router
@@ -23,6 +24,15 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="FestOS", version="0.2.0",
               description="Epinoia 2026 — Aarohan internal control portal (backend)",
               lifespan=lifespan)
+
+# The frontend (Vite dev server on :5173 or any built copy) needs this.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router.router)
 app.include_router(imports_router.router)

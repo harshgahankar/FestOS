@@ -66,6 +66,17 @@ def list_events(
                        for e in rows]}
 
 
+@router.get("/venues")
+def list_venues(user=Depends(require_role("director", "events_lead", "viewer")),
+                db: Session = Depends(get_db)):
+    """Venue roster — needed by the disruption desk for venue-change payloads."""
+    return {"total": db.query(Venue).count(),
+            "venues": [{"id": v.id, "raw_id": v.raw_id, "name": v.name,
+                        "capacity": v.capacity,
+                        "availability_windows": v.availability_windows or []}
+                       for v in db.query(Venue).order_by(Venue.raw_id).all()]}
+
+
 @router.patch("/events/{event_id}")
 def edit_event(event_id: int, body: schemas.EventEditIn,
                user=Depends(require_role("director", "events_lead")),
