@@ -1,0 +1,41 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from app import db as db_mod
+from app.routers import auth as auth_router, imports as imports_router
+from app.routers import participants as participants_router
+from app.routers import contingents as contingents_router
+from app.routers import accommodation as accommodation_router
+from app.routers import schedule as schedule_router
+from app.routers import inventory as inventory_router
+from app.routers import vendors as vendors_router
+from app.routers import disruptions as disruptions_router
+from app.routers import control as control_router
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    db_mod.Base.metadata.create_all(db_mod.engine)
+    yield
+
+
+app = FastAPI(title="FestOS", version="0.2.0",
+              description="Epinoia 2026 — Aarohan internal control portal (backend)",
+              lifespan=lifespan)
+
+app.include_router(auth_router.router)
+app.include_router(imports_router.router)
+app.include_router(participants_router.router)
+app.include_router(contingents_router.router)
+app.include_router(accommodation_router.router)
+app.include_router(schedule_router.router)
+app.include_router(inventory_router.router)
+app.include_router(vendors_router.router)
+app.include_router(disruptions_router.router)
+app.include_router(control_router.router)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
