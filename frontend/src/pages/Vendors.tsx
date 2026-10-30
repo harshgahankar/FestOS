@@ -88,8 +88,9 @@ export default function Vendors() {
   }
 
   const byId = new Map((list?.vendors ?? []).map((v) => [v.id, v]));
-  const expSet = new Set(list?.compliance.expired ?? []);
-  const expingSet = new Set(list?.compliance.expiring ?? []);
+  const stlByVendor = new Map((stl?.rows ?? []).map((r) => [r.vendor_id, r]));
+  const expSet = new Set(list?.compliance?.expired ?? []);
+  const expingSet = new Set(list?.compliance?.expiring ?? []);
 
   return (
     <div>
@@ -103,57 +104,125 @@ export default function Vendors() {
       {busy && <Spinner label="checking the kitchens…" />}
 
       {list && (
-        <Paper title={`Vendors (${list.vendors.length}) — fest window ${list.days.start} → ${list.days.end}`}>
+        <Paper title={`Vendors (${list.vendors?.length ?? 0}) — fest window ${list.days?.start ?? "—"} → ${list.days?.end ?? "—"}`}>
           <div className="overflow-x-auto rounded-sm border-2 border-crimson-dark/20 bg-white/40">
             <table className="w-full text-left">
               <thead className="bg-crimson-dark/10 text-[11px] uppercase tracking-wider text-ink/70">
                 <tr>
-                  <th className="px-2 py-2">raw id</th><th className="px-2 py-2">name</th>
-                  <th className="px-2 py-2">covers diets</th><th className="px-2 py-2">cert expiry</th>
-                  <th className="px-2 py-2">cap/day</th><th className="px-2 py-2">rate</th>
-                  <th className="px-2 py-2">status</th><th className="px-2 py-2">actions</th>
+                  <th className="px-3 py-2.5">Vendor</th>
+                  <th className="px-3 py-2.5">Diets</th>
+                  <th className="px-3 py-2.5">Cap/meal</th>
+                  <th className="px-3 py-2.5">Hours</th>
+                  <th className="px-3 py-2.5">Hygiene cert</th>
+                  <th className="px-3 py-2.5">Rate</th>
+                  <th className="px-3 py-2.5">Terms</th>
+                  <th className="px-3 py-2.5">Served</th>
+                  <th className="px-3 py-2.5">Due</th>
+                  <th className="px-3 py-2.5">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {list.vendors.map((v) => {
+                {(list.vendors ?? []).map((v) => {
                   const exp = expSet.has(v.raw_id);
                   const exping = expingSet.has(v.raw_id);
+                  const stlRow = stlByVendor.get(v.id);
                   return (
-                    <tr key={v.id} className="border-b border-ink/10 align-top">
-                      <td className="px-2 py-1.5 font-mono text-xs font-bold">
-                        {v.raw_id}
-                        {exp ? <Badge sev="error">expired</Badge>
-                          : exping ? <Badge sev="warning">mid-fest expiry</Badge> : null}
+                    <tr key={v.id} className="border-b border-ink/10 align-top hover:bg-mustard/5 transition-colors">
+                      {/* Vendor */}
+                      <td className="px-3 py-2.5">
+                        <div className="text-sm font-bold text-ink leading-tight">{v.name}</div>
+                        <div className="font-mono text-xs text-ink/60 mt-0.5">{v.raw_id}</div>
                       </td>
-                      <td className="px-2 py-1.5 text-sm font-semibold">{v.name}</td>
-                      <td className="px-2 py-1.5">
-                        <span className="flex flex-wrap gap-1">
-                          {v.dietary_coverage.length
+
+                      {/* Diets */}
+                      <td className="px-3 py-2.5">
+                        <span className="flex flex-wrap gap-1 max-w-[180px]">
+                          {(v.dietary_coverage ?? []).length
                             ? v.dietary_coverage.map((t) => <Badge key={t} sev="neutral">{t}</Badge>)
                             : <Unknown />}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-xs">{v.hygiene_cert_expiry ?? <Unknown />}</td>
-                      <td className="px-2 py-1.5 text-xs">{v.capacity_per_day ?? <Unknown />}</td>
-                      <td className="px-2 py-1.5 text-xs">{v.rate === null ? <Badge sev="warning">no rate</Badge> : `₹${v.rate}`}</td>
-                      <td className="px-2 py-1.5">
-                        <Badge sev={v.status === "interrupted" ? "error" : "good"}>{v.status}</Badge>
+
+                      {/* Cap/meal */}
+                      <td className="px-3 py-2.5 text-xs font-mono">
+                        {v.capacity_per_day ?? <Unknown />}
                       </td>
-                      <td className="px-2 py-1.5">
-                        <span className="flex gap-1">
+
+                      {/* Hours */}
+                      <td className="px-3 py-2.5 text-xs font-mono">
+                        {v.hours ?? <Unknown />}
+                      </td>
+
+                      {/* Hygiene cert */}
+                      <td className="px-3 py-2.5 text-xs">
+                        <div>{v.hygiene_cert_expiry ?? <Unknown />}</div>
+                        {exp ? (
+                          <div className="mt-1"><Badge sev="error">expired</Badge></div>
+                        ) : exping ? (
+                          <div className="mt-1"><Badge sev="warning">mid-fest expiry</Badge></div>
+                        ) : null}
+                      </td>
+
+                      {/* Rate */}
+                      <td className="px-3 py-2.5 text-xs">
+                        {v.rate === null ? (
                           <button
                             onClick={() => { setModalErr(""); setModal({ kind: "rate", vendor: v }); }}
-                            className="rounded-sm border border-teal-dark/50 bg-teal/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-teal-dark hover:bg-teal/40">
-                            rate
+                            className="rounded-sm border border-teal-dark/50 bg-teal/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-teal-dark hover:bg-teal/40"
+                          >
+                            + set rate
                           </button>
+                        ) : (
+                          <span className="font-semibold text-xs flex items-center gap-1">
+                            ₹{v.rate}
+                            <button
+                              onClick={() => { setModalErr(""); setModal({ kind: "rate", vendor: v }); }}
+                              className="text-[10px] text-teal-dark hover:underline ml-0.5"
+                              title="Edit rate"
+                            >
+                              ✏
+                            </button>
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Terms */}
+                      <td className="px-3 py-2.5 text-xs italic text-ink/75 max-w-[140px]" title={v.payment_terms ?? ""}>
+                        {v.payment_terms ?? <Unknown />}
+                      </td>
+
+                      {/* Served */}
+                      <td className="px-3 py-2.5 text-xs font-mono font-semibold">
+                        {stlRow ? stlRow.qty : 0}
+                      </td>
+
+                      {/* Due */}
+                      <td className="px-3 py-2.5 text-xs font-semibold">
+                        {stlRow?.amount !== null && stlRow?.amount !== undefined ? (
+                          <span>
+                            ₹{stlRow.amount}
+                            {stlRow.paid && (
+                              <span className="ml-1 text-[10px] text-teal-dark font-bold">(paid)</span>
+                            )}
+                          </span>
+                        ) : (
+                          <Unknown />
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge sev={v.status === "interrupted" ? "error" : "good"}>{v.status}</Badge>
                           {v.status !== "interrupted" && (
                             <button
                               onClick={() => void previewInterrupt(v)}
-                              className="rounded-sm border border-crimson-dark/50 bg-mustard/40 px-1.5 py-0.5 text-[10px] font-bold uppercase text-crimson-deep hover:bg-mustard/70">
+                              className="rounded-sm border border-crimson-dark/50 bg-mustard/40 px-1.5 py-0.5 text-[10px] font-bold uppercase text-crimson-deep hover:bg-mustard/70 transition"
+                            >
                               interrupt ⚠
                             </button>
                           )}
-                        </span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -170,24 +239,27 @@ export default function Vendors() {
       {cov && (
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <Paper title="Dietary coverage — participant diet tags vs vendor menus">
-            {cov.tags_with_players.length === 0 ? (
-              <p className="text-sm italic text-ink/60">no diet tags are carried by any active participant — nothing to cover from the matrix</p>
-            ) : (
-              <ul className="text-sm">
-                {cov.tags_with_players.map((t) => (
-                  <li key={t} className="mb-1 flex items-center gap-2">
-                    <Badge sev="neutral">{t}</Badge>
-                    {(cov.matrix[t]?.vendors ?? []).length > 0
-                      ? <span className="text-xs">covered by {(cov.matrix[t]?.vendors ?? []).map((i) => byId.get(i)?.raw_id ?? `#${i}`).join(", ")}</span>
-                      : <Badge sev="error">no vendor covers this</Badge>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {cov.uncovered_tags.length > 0 && (
+            {(() => {
+              const dietTags = cov.tags_with_players ?? Object.keys(cov.matrix ?? {});
+              return dietTags.length === 0 ? (
+                <p className="text-sm italic text-ink/60">no diet tags are carried by any active participant — nothing to cover from the matrix</p>
+              ) : (
+                <ul className="text-sm">
+                  {dietTags.map((t) => (
+                    <li key={t} className="mb-1 flex items-center gap-2">
+                      <Badge sev="neutral">{t}</Badge>
+                      {(cov.matrix?.[t]?.vendors ?? []).length > 0
+                        ? <span className="text-xs">covered by {(cov.matrix?.[t]?.vendors ?? []).map((i) => byId.get(i)?.raw_id ?? `#${i}`).join(", ")}</span>
+                        : <Badge sev="error">no vendor covers this</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
+            {(cov.uncovered_tags ?? []).length > 0 && (
               <div className="mt-2 rounded-sm border-2 border-mustard bg-mustard/20 p-2 text-xs">
                 <strong>Engine flags (all participants incl. pending):</strong>{" "}
-                {cov.uncovered_tags.join(", ")} — with {cov.matrix[cov.uncovered_tags[0]]?.unmet ?? 0} declared
+                {cov.uncovered_tags.join(", ")} — with {cov.matrix?.[cov.uncovered_tags[0]]?.unmet ?? 0} declared
                 portion-demand and zero vendor coverage. No kitchen can serve these guests as things stand.
               </div>
             )}

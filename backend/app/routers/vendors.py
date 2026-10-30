@@ -17,7 +17,9 @@ def _v_dict(v: Vendor) -> dict:
     return {"id": v.id, "raw_id": v.raw_id, "name": v.name,
             "dietary_coverage": v.dietary_coverage or [],
             "hygiene_cert_expiry": v.hygiene_cert_expiry,
+            "hours": v.hours,
             "capacity_per_day": v.capacity_per_day, "rate": v.rate,
+            "payment_terms": v.payment_terms,
             "status": v.status}
 
 

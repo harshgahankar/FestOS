@@ -12,6 +12,16 @@ export type SchedEvent = {
 };
 export type EventsList = { total: number; events: SchedEvent[] };
 
+export type SchedVenue = {
+  id: number;
+  raw_id: string;
+  name: string;
+  capacity: number;
+  availability_windows?: string[];
+};
+export type VenuesList = { total: number; venues: SchedVenue[] };
+
+
 export type Conflict = {
   type: string;
   severity: "error" | "warning" | "info";
@@ -27,7 +37,7 @@ export type Conflict = {
 };
 export type ConflictCheck = {
   conflicts: Conflict[];
-  suggestions: string[];
+  suggestions: (string | Record<string, unknown>)[];
   checked_events: number;
   summary: Record<string, number>;
 };
@@ -46,5 +56,5 @@ export type MoveResp = {
   raw_id: string;
   audit_entry: number;
   remaining_conflicts_for_event: Conflict[];
-  suggestions: string[];
+  suggestions: (string | Record<string, unknown>)[];
 };

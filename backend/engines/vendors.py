@@ -82,7 +82,8 @@ def coverage_matrix(vendors: list[dict], participants: list[dict],
         serving = [v["id"] for v in vendors if tag in covers.get(v["id"], set())]
         matrix[tag] = {"demand": n, "vendors": serving,
                        "unmet": n if not serving else 0}
-    return {"days": fest_days, "matrix": matrix,
+    return {"days": fest_days, "tags_with_players": sorted(demand.keys()),
+            "matrix": matrix,
             "uncovered_tags": [t for t, m in matrix.items() if not m["vendors"]]}
 
 

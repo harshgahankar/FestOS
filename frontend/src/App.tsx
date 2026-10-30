@@ -12,7 +12,7 @@ import Accommodation from "./pages/Accommodation";
 import Schedule from "./pages/Schedule";
 import Inventory from "./pages/Inventory";
 import Vendors from "./pages/Vendors";
-import Disruptions from "./pages/Disruptions";
+import Team from "./pages/Team";
 import { Spinner } from "./components/ui";
 
 function ComingSoon({ module }: { module: string }) {
@@ -65,7 +65,8 @@ function Boot() {
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/vendors" element={<Vendors />} />
-                <Route path="/disruptions" element={<Disruptions />} />
+                <Route path="/team" element={<Team />} />
+                <Route path="/disruptions" element={<Team />} />
                 <Route path="*" element={<ComingSoon module="Unknown page" />} />
               </Routes>
             </Shell>

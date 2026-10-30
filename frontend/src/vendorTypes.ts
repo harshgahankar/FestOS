@@ -4,8 +4,10 @@ export type Vendor = {
   name: string;
   dietary_coverage: string[];
   hygiene_cert_expiry: string | null;
+  hours?: string | null;
   capacity_per_day: number | null;
   rate: number | null;
+  payment_terms?: string | null;
   status: string;
 };
 

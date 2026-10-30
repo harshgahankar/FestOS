@@ -160,8 +160,13 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
       <div className="border-b-2 border-crimson-dark/40 bg-crimson-dark px-4 py-3 text-cream">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="wordmark text-xl tracking-wider text-mustard">
-              FEST·OS AI
+            <h2 className="flex items-baseline gap-0.5 font-display text-xl font-bold tracking-tight text-cream">
+              <span>FEST</span>
+              <span className="text-saffron">·</span>
+              <span className="text-mustard">OS</span>
+              <span className="ml-1 rounded bg-mustard/20 px-1 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-mustard border border-mustard/30">
+                AI
+              </span>
             </h2>
             <span className="flex items-center gap-1 rounded-sm bg-crimson-deep px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream/90">
               <span className={`inline-block h-1.5 w-1.5 rounded-full ${health?.status === "ok" ? "bg-teal" : "bg-mustard"}`} />

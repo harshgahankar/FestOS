@@ -64,7 +64,7 @@ export function Paper({
 }: {
   children: ReactNode;
   className?: string;
-  title?: string;
+  title?: ReactNode;
 }) {
   return (
     <section
