@@ -1,9 +1,12 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth";
 import type { Role } from "../auth";
 import { Badge } from "./ui";
 import { Bunting } from "./Decor";
+import { ChatbotLauncher } from "./chatbot/ChatbotLauncher";
+import { ChatbotPanel } from "./chatbot/ChatbotPanel";
 
 /**
  * Role-scoped nav. Mirrors backend require_role() so nobody is ever
@@ -24,13 +27,14 @@ const NAV: { key: string; label: string; path: string; roles: Role[] }[] = [
 export default function Shell({ children }: { children?: ReactNode }) {
   const { user, logout } = useAuth();
   const nav = useNavigate();
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const items = NAV.filter((n) => user && n.roles.includes(user.role));
 
   return (
-    <div className="beige min-h-screen">
-      <Bunting className="h-8 w-full" />
-      <div className="mx-auto flex max-w-7xl gap-4 p-3 sm:p-5">
-        <aside className="paper sticky top-4 hidden h-fit w-56 shrink-0 rounded-sm border-2 border-crimson-dark/30 p-3 sm:block">
+    <div className="beige min-h-screen flex flex-col">
+      <Bunting className="h-8 w-full shrink-0" />
+      <div className="mx-auto flex flex-1 w-full max-w-7xl items-stretch gap-4 p-3 sm:p-5">
+        <aside className="paper hidden w-56 shrink-0 rounded-sm border-2 border-crimson-dark/30 p-3 sm:flex sm:flex-col">
           <p className="font-display text-center text-xl text-ink">Aarohan 2026</p>
           <div className="my-2 border-t-2 border-teal-dark/20" />
           <nav className="flex flex-col gap-1">
@@ -40,7 +44,7 @@ export default function Shell({ children }: { children?: ReactNode }) {
                 to={n.path}
                 end={n.path === "/"}
                 className={({ isActive }) =>
-                  `rounded-sm px-2 py-1.5 text-sm font-bold text-ink/80 hover:bg-teal/20 ${
+                  `rounded-sm px-2 py-1.5 text-sm font-bold text-ink/80 hover:bg-teal/20 transition ${
                     isActive ? "bg-mustard/80 text-ink" : ""
                   }`
                 }
@@ -51,24 +55,24 @@ export default function Shell({ children }: { children?: ReactNode }) {
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 flex flex-col">
           <header className="mb-4 flex items-center justify-between gap-3">
             <h1 className="wordmark text-2xl sm:text-3xl">
               <NavLink to="/" className="no-underline">
                 FEST·OS
               </NavLink>
             </h1>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {user && (
                 <>
-                  <span className="hidden text-ink/70 text-sm sm:inline">{user.username}</span>
+                  <span className="text-ink/80 text-sm font-bold sm:inline">{user.username}</span>
                   <Badge sev={user.role === "director" ? "warning" : "info"}>{user.role}</Badge>
                   <button
                     onClick={() => {
                       logout();
                       nav("/login", { replace: true });
                     }}
-                    className="rounded-sm border-2 border-crimson-dark/50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-crimson-deep hover:bg-crimson-dark/10"
+                    className="rounded-sm border-2 border-crimson-dark/50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-crimson-deep hover:bg-crimson-dark/10 transition active:translate-y-px"
                   >
                     log out
                   </button>
@@ -80,7 +84,26 @@ export default function Shell({ children }: { children?: ReactNode }) {
         </main>
       </div>
 
-      <nav className="flex flex-wrap justify-center gap-1 border-t border-crimson-dark p-2 sm:hidden">
+      {/* Floating launcher for convenient access across pages */}
+      {user && !isChatOpen && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <ChatbotLauncher
+            onClick={() => setIsChatOpen(true)}
+            isOpen={isChatOpen}
+          />
+        </div>
+      )}
+
+      {/* FestOS AI Operations Panel */}
+      {user && (
+        <ChatbotPanel
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          userRole={user.role}
+        />
+      )}
+
+      <nav className="flex flex-wrap justify-center gap-1 border-t border-crimson-dark p-2 sm:hidden shrink-0">
         {items.map((n) => (
           <NavLink
             key={n.key}

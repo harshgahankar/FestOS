@@ -328,3 +328,22 @@ class ConfigRule(_Base, Base):
     key: Mapped[str] = mapped_column(String, unique=True)
     value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class ChatConversation(_Base, Base):
+    __tablename__ = "chat_conversations"
+    conversation_id: Mapped[str] = mapped_column(String, unique=True, index=True)
+    user_id: Mapped[str] = mapped_column(String, index=True)
+    title: Mapped[str] = mapped_column(String, default="New Conversation")
+
+
+class ChatMessageRecord(_Base, Base):
+    __tablename__ = "chat_messages"
+    conversation_id: Mapped[str] = mapped_column(String, index=True)
+    sender: Mapped[str] = mapped_column(String)  # user / assistant
+    content: Mapped[str] = mapped_column(String)
+    sources: Mapped[Optional[list]] = mapped_column(JSON, default=list)
+    confidence: Mapped[Optional[str]] = mapped_column(String, default="high")
+    answer_type: Mapped[Optional[str]] = mapped_column(String, default="FESTOS DATABASE")
+    follow_ups: Mapped[Optional[list]] = mapped_column(JSON, default=list)
+

@@ -58,10 +58,21 @@ DEMO_USER_EMAILS = {r: f"{r}@festos.local" for r in DEMO_PASSWORDS}
 SUPABASE_TOKEN_CACHE_TTL = 300          # seconds for /auth/v1/user introspection
 HTTP_TIMEOUT_S = 10
 
-# --- security / auth ---------------------------------------------------------
 SECRET_KEY = "dev-secret-festos-epinoia-2026-rotate-via-env-in-real-ops"  # local mode
 JWT_ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 12
+
+# --- FestOS AI Operations Assistant -----------------------------------------
+FESTOS_AI_ENABLED = os.getenv("FESTOS_AI_ENABLED", "true").lower() in ("true", "1", "yes")
+FESTOS_LLM_PROVIDER = os.getenv("FESTOS_LLM_PROVIDER", "openai_compatible")
+FESTOS_LLM_API_KEY = os.getenv("FESTOS_LLM_API_KEY", "")
+FESTOS_LLM_BASE_URL = os.getenv("FESTOS_LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+FESTOS_LLM_MODEL = os.getenv("FESTOS_LLM_MODEL", "gpt-4o-mini")
+FESTOS_EMBEDDING_PROVIDER = os.getenv("FESTOS_EMBEDDING_PROVIDER", "local")
+FESTOS_EMBEDDING_MODEL = os.getenv("FESTOS_EMBEDDING_MODEL", "text-embedding-3-small")
+FESTOS_VECTOR_STORE_PATH = os.getenv(
+    "FESTOS_VECTOR_STORE_PATH", str(BACKEND_DIR / "data" / "festos_vectors.json")
+)
 
 ROLES = tuple(DEMO_PASSWORDS.keys())
 # role -> capabilities used by require_permission (kept minimal in phases 0-2)

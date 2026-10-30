@@ -13,6 +13,7 @@ from app.routers import inventory as inventory_router
 from app.routers import vendors as vendors_router
 from app.routers import disruptions as disruptions_router
 from app.routers import control as control_router
+from app.routers import chatbot as chatbot_router
 
 
 @asynccontextmanager
@@ -44,6 +45,7 @@ app.include_router(inventory_router.router)
 app.include_router(vendors_router.router)
 app.include_router(disruptions_router.router)
 app.include_router(control_router.router)
+app.include_router(chatbot_router.router)
 
 
 @app.get("/health")

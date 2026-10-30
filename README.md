@@ -89,6 +89,12 @@ python -m pytest tests -q
 - Control center (director only): `GET /control/attention` (merged findings
   inbox, severity-sorted), `GET /control/kpis` (occupancy is null until a plan
   is active), `GET /control/audit` (filterable audit browser, A-35).
+- **FestOS AI Operations Assistant** ("Ask your festival operations data"):
+  `GET /chatbot/health` (status & provider capabilities), `POST /chatbot/chat`
+  (grounded natural-language operations query), `GET /chatbot/conversations`
+  (authorized user history), `GET /chatbot/conversations/{id}` (conversation detail),
+  `POST /chatbot/reindex` (refresh semantic vectors, director only). Complete spec:
+  `docs/CHATBOT_ARCHITECTURE.md`.
 
 ## Known limitations
 
