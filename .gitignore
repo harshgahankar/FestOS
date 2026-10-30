@@ -1,0 +1,7 @@
+# Secrets and local DB
+backend/.env
+backend/festos.db
+backend/*.db
+__pycache__/
+.pytest_cache/
+*.pyc
