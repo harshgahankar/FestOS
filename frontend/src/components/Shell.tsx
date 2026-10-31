@@ -214,9 +214,9 @@ export default function Shell({ children }: { children?: ReactNode }) {
       <div className="flex flex-1 w-full items-stretch gap-4 p-3 sm:p-5 sm:pl-4">
         {/* Sidebar at the left edge of the layout, full height */}
         <aside className="paper relative hidden w-72 shrink-0 flex-col rounded-md border-2 border-crimson-dark/30 shadow-[0_3px_0_rgba(64,16,18,0.35)] sm:flex select-none sticky top-3 max-h-[calc(100vh-1.5rem)] self-start h-[calc(100vh-1.5rem)] overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col p-3 px-4">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 px-4">
             {/* Header: FESTOS / Aarohan 2026 */}
-            <div className="mb-2 px-1 pt-1">
+            <div className="mb-2 shrink-0 px-1 pt-1">
               <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-saffron">
                 FESTOS
               </p>
@@ -227,7 +227,7 @@ export default function Shell({ children }: { children?: ReactNode }) {
             </div>
 
             {/* Nav items, grouped by concern */}
-            <nav className="flex flex-col space-y-2.5">
+            <nav className="flex min-h-0 flex-1 flex-col space-y-2.5 overflow-y-auto pr-0.5">
               {groups.map((g) => (
                 <div key={g.label} className="flex flex-col space-y-0.5">
                   <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-crimson-dark/60">
@@ -266,7 +266,7 @@ export default function Shell({ children }: { children?: ReactNode }) {
             </nav>
 
             {/* Festival status card fills the gap below nav */}
-            <div className="mt-auto pt-3 px-1">
+            <div className="mt-2 shrink-0 px-1 pt-2">
               <div className="rounded-sm border-2 border-teal-dark/25 bg-teal/10 p-2">
                 <div className="flex items-center justify-between">
                   <span className="rounded-sm bg-teal/25 px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-teal-dark">
@@ -306,7 +306,7 @@ export default function Shell({ children }: { children?: ReactNode }) {
 
           {/* User profile & sign out footer */}
           {user && (
-            <div className="mt-3 border-t-2 border-crimson-dark/20 px-4 pt-2.5 pb-3">
+            <div className="shrink-0 border-t-2 border-crimson-dark/20 px-4 pt-2.5 pb-3">
               <p className="text-sm font-bold text-ink leading-tight">
                 {formatRoleName(user.role)}
               </p>
