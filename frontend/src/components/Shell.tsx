@@ -125,6 +125,21 @@ const NAV: NavItem[] = [
   },
 ];
 
+const FEST_START = new Date("2026-10-30T00:00:00");
+const FEST_DAYS = 3;
+const FEST_END = new Date(FEST_START.getTime() + FEST_DAYS * 24 * 60 * 60 * 1000);
+
+function festDay(): { label: string; progress: number } {
+  const now = new Date();
+  if (now < FEST_START) {
+    const days = Math.ceil((FEST_START.getTime() - now.getTime()) / 86400000);
+    return { label: days > 1 ? `starts in ${days} days` : "starts tomorrow", progress: 0 };
+  }
+  if (now >= FEST_END) return { label: "wrapped up", progress: 100 };
+  const day = Math.floor((now.getTime() - FEST_START.getTime()) / 86400000) + 1;
+  return { label: `day ${day} of ${FEST_DAYS}`, progress: ((day - 1) / FEST_DAYS) * 100 + 100 / FEST_DAYS };
+}
+
 function formatRoleName(role?: Role | string): string {
   if (!role) return "User";
   switch (role) {
@@ -152,14 +167,25 @@ export default function Shell({ children }: { children?: ReactNode }) {
   const nav = useNavigate();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const items = NAV.filter((n) => user && n.roles.includes(user.role));
+  const day = festDay();
+
+  const groups: { label: string; sub: NavItem[] }[] = [
+    {
+      label: "Operate",
+      sub: items.filter((n) =>
+        ["control", "people", "accom", "schedule", "inventory", "vendors"].includes(n.key)
+      ),
+    },
+    { label: "Govern", sub: items.filter((n) => ["team", "audit"].includes(n.key)) },
+  ].filter((g) => g.sub.length > 0);
 
   return (
     <div className="beige min-h-screen flex flex-col">
       <Bunting className="h-8 w-full shrink-0" />
-      <div className="mx-auto flex flex-1 w-full max-w-7xl items-stretch gap-4 p-3 sm:p-5">
-        {/* Sidebar matching user design in website theme colors */}
-        <aside className="paper relative hidden w-64 shrink-0 rounded-sm border-2 border-crimson-dark/30 p-4 shadow-[0_3px_0_rgba(64,16,18,0.35)] sm:flex sm:flex-col justify-between select-none">
-          <div>
+      <div className="flex flex-1 w-full items-stretch gap-4 p-3 sm:p-5 sm:pl-4">
+        {/* Sidebar at the left edge of the layout, full height */}
+        <aside className="paper relative hidden w-72 shrink-0 flex-col rounded-md border-2 border-crimson-dark/30 shadow-[0_3px_0_rgba(64,16,18,0.35)] sm:flex select-none">
+          <div className="flex min-h-0 flex-1 flex-col p-4">
             {/* Header: FESTOS / Aarohan 2026 */}
             <div className="mb-4 px-1 pt-1">
               <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-saffron">
@@ -171,38 +197,85 @@ export default function Shell({ children }: { children?: ReactNode }) {
               <div className="my-2.5 border-t-2 border-teal-dark/20" />
             </div>
 
-            {/* Nav items */}
-            <nav className="flex flex-col space-y-1">
-              {items.map((n) => (
-                <NavLink
-                  key={n.key}
-                  to={n.path}
-                  end={n.path === "/"}
-                  className={({ isActive }) =>
-                    `group flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-all ${
-                      isActive
-                        ? "bg-mustard text-ink font-bold shadow-xs border-2 border-mustard-dark/40 ring-1 ring-mustard/30"
-                        : "text-ink/80 hover:text-ink hover:bg-teal/20 font-semibold"
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <span className={`shrink-0 transition-colors ${isActive ? "text-ink" : "text-ink/65 group-hover:text-crimson-deep"}`}>
-                        {n.icon}
-                      </span>
-                      <span className="truncate">{n.label}</span>
-                      {n.badge !== undefined && (
-                        <span className="ml-auto rounded-sm bg-crimson-dark text-cream border border-saffron/40 px-1.5 py-0.5 text-[10px] font-bold shadow-xs leading-none">
-                          {n.badge}
-                        </span>
+            {/* Nav items, grouped by concern */}
+            <nav className="flex flex-col space-y-4 overflow-y-auto">
+              {groups.map((g) => (
+                <div key={g.label} className="flex flex-col space-y-1">
+                  <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-crimson-dark/60">
+                    {g.label}
+                  </p>
+                  {g.sub.map((n) => (
+                    <NavLink
+                      key={n.key}
+                      to={n.path}
+                      end={n.path === "/"}
+                      className={({ isActive }) =>
+                        `group flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-all ${
+                          isActive
+                            ? "bg-mustard text-ink font-bold shadow-xs border-2 border-mustard-dark/40 ring-1 ring-mustard/30"
+                            : "text-ink/80 hover:text-ink hover:bg-teal/20 font-semibold"
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <span className={`shrink-0 transition-colors ${isActive ? "text-ink" : "text-ink/65 group-hover:text-crimson-deep"}`}>
+                            {n.icon}
+                          </span>
+                          <span className="truncate">{n.label}</span>
+                          {n.badge !== undefined && (
+                            <span className="ml-auto rounded-sm bg-crimson-dark text-cream border border-saffron/40 px-1.5 py-0.5 text-[10px] font-bold shadow-xs leading-none">
+                              {n.badge}
+                            </span>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                </NavLink>
+                    </NavLink>
+                  ))}
+                </div>
               ))}
             </nav>
+
+            {/* Festival status card fills the gap below nav */}
+            <div className="mt-auto pt-5 px-1">
+              <div className="rounded-sm border-2 border-teal-dark/25 bg-teal/10 p-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-sm bg-teal/25 px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-teal-dark">
+                    live
+                  </span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal animate-pulse" />
+                </div>
+                <p className="mt-1.5 font-display text-xl font-extrabold leading-none text-ink">
+                  {day.label}
+                </p>
+                <p className="mt-1 text-[11px] text-ink/60">
+                  Oct 30 – Nov 1 · 10 venues
+                </p>
+                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-ink/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-saffron to-crimson"
+                    style={{ width: `${day.progress}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex justify-between">
+                  {[1, 2, 3].map((d) => (
+                    <span
+                      key={d}
+                      className={`rounded-sm border px-1.5 text-[10px] font-mono font-bold ${
+                        day.progress >= (d / FEST_DAYS) * 100 - 100 / FEST_DAYS / 2
+                          ? "border-teal-dark/40 bg-teal/20 text-teal-dark"
+                          : "border-ink/15 text-ink/45"
+                      }`}
+                    >
+                      day {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* User profile & sign out footer */}
 
           {/* User profile & sign out footer */}
           {user && (
