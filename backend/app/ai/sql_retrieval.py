@@ -758,6 +758,109 @@ class SQLRetrievalService:
         }
 
     @staticmethod
+    def get_events_by_day(db: Session, day: Optional[int], user_role: str) -> dict[str, Any]:
+        denied = _check_permission(user_role, "schedule")
+        if denied:
+            return denied
+
+        events = db.query(Event).all()
+        venues = {v.id: v.name for v in db.query(Venue).all()}
+
+        scheduled = sorted(
+            [e for e in events if e.start_dt is not None],
+            key=lambda e: (e.start_dt, e.name or ""),
+        )
+        unscheduled = [e for e in events if e.start_dt is None]
+
+        by_date: dict[Any, list[Event]] = {}
+        for e in scheduled:
+            by_date.setdefault(e.start_dt.date(), []).append(e)
+        dates = sorted(by_date)
+        total_days = len(dates)
+
+        if day is None:
+            rows, chosen = scheduled, None
+        elif 1 <= day <= total_days:
+            chosen = dates[day - 1]
+            rows = by_date[chosen]
+        else:
+            return {
+                "authorized": True,
+                "found": False,
+                "facts": {"day": day, "total_days": total_days},
+                "summary_text": (
+                    f"I have scheduled events spread across {total_days} day(s) "
+                    f"({', '.join(str(d) for d in dates)}). There is no day {day} in the current schedule — ask for a specific day between 1 and {total_days}."
+                ),
+                "citations": [
+                    SourceCitation(
+                        type="database_query",
+                        label="Event schedule: day out of range",
+                        module="schedule",
+                        detail={"requested_day": day, "total_days": total_days}
+                    )
+                ]
+            }
+
+        def _fmt(dt: Any) -> str:
+            return dt.strftime("%H:%M") if dt else "end not fixed"
+
+        if chosen is not None:
+            date_str = chosen.strftime("%Y-%m-%d (%A)")
+            lines = [f"Day {day} — {date_str}: {len(rows)} scheduled event(s)."]
+        else:
+            lines = []
+            for idx, d in enumerate(dates, start=1):
+                lines.append(f"Day {idx} — {d.strftime('%Y-%m-%d (%A)')}: {len(by_date[d])} event(s).")
+                lines.extend(
+                    f"  - {e.name or e.raw_id or f'Event #{e.id}'} · {_fmt(e.start_dt)} → {_fmt(e.end_dt)} · {venues.get(e.venue_id, 'no venue assigned')}"
+                    for e in by_date[d]
+                )
+            rows = []
+        for e in rows:
+            venue_name = venues.get(e.venue_id, "no venue assigned")
+            lines.append(
+                f"- {e.name or e.raw_id or f'Event #{e.id}'} · "
+                f"{_fmt(e.start_dt)} → {_fmt(e.end_dt)} · {venue_name}"
+            )
+        if unscheduled:
+            lines.append(
+                f"- (FYI: {len(unscheduled)} event(s) exist without a confirmed start time and cannot be placed on a day.)"
+            )
+        summary = "\n".join(lines) if lines else "No scheduled events recorded."
+
+        facts = {
+            "day": day,
+            "date": str(chosen) if chosen else None,
+            "events": [
+                {
+                    "name": e.name or e.raw_id,
+                    "raw_id": e.raw_id,
+                    "start": _fmt(e.start_dt),
+                    "end": _fmt(e.end_dt),
+                    "venue": venues.get(e.venue_id, None),
+                }
+                for e in rows
+            ],
+            "total_days": total_days,
+        }
+        label = f"Event schedule: day {day}" if day else "Event schedule: all days"
+        return {
+            "authorized": True,
+            "found": True,
+            "facts": facts,
+            "summary_text": summary,
+            "citations": [
+                SourceCitation(
+                    type="database_query",
+                    label=label,
+                    module="schedule",
+                    detail=facts
+                )
+            ]
+        }
+
+    @staticmethod
     def check_item_inventory_status(db: Session, item_query: str, user_role: str) -> dict[str, Any]:
         denied = _check_permission(user_role, "inventory")
         if denied:
@@ -936,31 +1039,91 @@ class SQLRetrievalService:
         }
 
     @staticmethod
-    def get_dietary_coverage(db: Session, user_role: str) -> dict[str, Any]:
+    def get_dietary_coverage(db: Session, user_role: str, tags: Optional[list[str]] = None) -> dict[str, Any]:
         denied = _check_permission(user_role, "vendors")
         if denied:
             return denied
 
-        from engines.vendors import coverage_matrix
+        from engines.vendors import coverage_matrix, normalize_tag
         vendors = [_v_dict(v) for v in db.query(Vendor).all()]
         participants_diet = [
             {"id": p.id, "dietary_tags": p.dietary_tags or []}
             for p in db.query(Participant).filter(Participant.merged_into.is_(None), Participant.status.in_(("active", "flagged"))).all()
         ]
         cov = coverage_matrix(vendors, participants_diet, FEST_DAYS)
+        matrix = cov.get("matrix", {})
 
-        facts = {
-            "covered_tags": cov.get("covered_tags", []),
-            "uncovered_tags": cov.get("uncovered_tags", []),
-            "total_participants_checked": len(participants_diet),
-        }
+        by_id = {v["id"]: v for v in vendors}
 
-        summary = (
-            f"Dietary Coverage Matrix:\n"
-            f"- Fully covered diets: {', '.join(facts['covered_tags']) or 'none'}\n"
-            f"- Uncovered dietary needs: {', '.join(facts['uncovered_tags']) or 'none'}\n"
-            f"Operational note: Any uncovered diet requires explicit menu additions or separate meal arrangement (A-04)."
-        )
+        def _vnames(vids: list) -> list[str]:
+            return [f"{by_id[i]['name']} ({by_id[i]['raw_id']})"
+                    for i in vids if i in by_id and by_id[i].get("status") != "interrupted"]
+
+        summary_lines: list[str] = []
+        if tags:
+            wanted = {normalize_tag(x) or x.strip().lower() for x in tags}
+            matched: dict[str, dict] = {}
+            for tag, m in matrix.items():
+                if any(w == tag for w in wanted):
+                    matched[tag] = m
+            if not matched:
+                summary_lines = [
+                    f"No vendor-side diet tag matches: {', '.join(sorted(wanted))}. "
+                    "FestOS recognizes: vegetarian, non-vegetarian, halal, nut allergy, "
+                    "gluten-free, vegan, jain."
+                ]
+                hits = []
+            else:
+                for tag in sorted(matched):
+                    names = _vnames(matched[tag].get("vendors", []))
+                    summary_lines.append(
+                        f"{tag}: " + (f"{', '.join(names)}" if names else "no vendor serves it — a menu addition or separate meal arrangement is required (A-04)")
+                    )
+                shared: set = None
+                for tag, m in matched.items():
+                    vids = set(m.get("vendors", []))
+                    shared = vids if shared is None else (shared & vids)
+                hit_ids = sorted(shared) if shared else []
+                hits = _vnames(hit_ids)
+                if len(matched) > 1 and hits:
+                    summary_lines.append(
+                        f"Vendors covering ALL of {', '.join(sorted(matched))}: "
+                        f"{', '.join(hits)}" if hits else "no single vendor covers all — split orders between vendors above."
+                    )
+                elif len(matched) > 1:
+                    summary_lines.append(
+                        "No single vendor covers all — split orders between the vendors above."
+                    )
+            facts: dict[str, Any] = {
+                "requested_tags": sorted(wanted),
+                "tag_vendors": {t: _vnames(m.get("vendors", [])) for t, m in sorted(matched.items())},
+                "vendors_covering_all": hits,
+                "covered_tags": cov.get("covered_tags", []),
+                "uncovered_tags": cov.get("uncovered_tags", []),
+                "total_participants_checked": len(participants_diet),
+            }
+        else:
+            summary_lines = [
+                "Dietary Coverage Matrix:",
+                f"- Fully covered diets: {', '.join(cov.get('covered_tags', [])) or 'none'}",
+                f"- Uncovered dietary needs: {', '.join(cov.get('uncovered_tags', [])) or 'none'}",
+            ]
+            for tag, m in sorted(matrix.items()):
+                names = _vnames(m.get("vendors", []))
+                summary_lines.append(
+                    f"- {tag} (demand {m.get('demand', 0)}): "
+                    + (f"{', '.join(names)}" if names else "no vendor")
+                )
+            summary_lines.append(
+                "Operational note: Any uncovered diet requires explicit menu additions or separate meal arrangement (A-04)."
+            )
+            facts = {
+                "covered_tags": cov.get("covered_tags", []),
+                "uncovered_tags": cov.get("uncovered_tags", []),
+                "total_participants_checked": len(participants_diet),
+            }
+
+        summary = "\n".join(summary_lines)
 
         return {
             "authorized": True,
@@ -971,7 +1134,7 @@ class SQLRetrievalService:
                     type="database_query",
                     label="Dietary Coverage Matrix",
                     module="vendors",
-                    detail={"uncovered_tags": facts["uncovered_tags"]}
+                    detail={"requested_tags": facts.get("requested_tags"), "uncovered_tags": facts["uncovered_tags"]}
                 )
             ]
         }

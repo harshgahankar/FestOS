@@ -314,6 +314,9 @@ class ChatOrchestrator:
         elif query_type == "scheduling_conflicts":
             venue_filter = intent.get("venue_filter")
             structured_result = SQLRetrievalService.get_scheduling_conflicts(db, user_role, venue_filter=venue_filter)
+        elif query_type == "event_list":
+            day = intent.get("day")
+            structured_result = SQLRetrievalService.get_events_by_day(db, day, user_role)
         elif query_type in ("event_schedule_issues", "move_event_impact"):
             structured_result = SQLRetrievalService.get_events_summary(db, user_role)
         elif query_type == "inventory_levels":
@@ -326,7 +329,7 @@ class ChatOrchestrator:
         elif query_type == "vendor_compliance":
             structured_result = SQLRetrievalService.get_vendor_compliance(db, user_role)
         elif query_type == "dietary_coverage":
-            structured_result = SQLRetrievalService.get_dietary_coverage(db, user_role)
+            structured_result = SQLRetrievalService.get_dietary_coverage(db, user_role, tags=intent.get("tags"))
         elif query_type == "vendor_settlements":
             structured_result = SQLRetrievalService.get_vendor_settlements(db, user_role)
         elif query_type == "control_kpis":

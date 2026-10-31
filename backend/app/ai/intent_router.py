@@ -402,6 +402,40 @@ class IntentRouter:
             }
 
         # ------------------- SCHEDULING & EVENTS -------------------
+        # Event listing / count by festival day ("how many events on day 2?", "what events are there on day 2?")
+        day_match = re.search(r"\bday\s*(\d+|[a-z]+)\b", norm)
+        if day_match and ("event" in norm or "events" in norm):
+            day_word = day_match.group(1)
+            day_num = {
+                "one": 1, "two": 2, "three": 3, "first": 1, "second": 2, "third": 3,
+            }.get(day_word) or (int(day_word) if day_word.isdigit() else None)
+            if day_num:
+                return {
+                    "category": "festos_data",
+                    "domain": "schedule",
+                    "query_type": "event_list",
+                    "day": day_num,
+                    "retrieval_mode": "structured",
+                    "requires_database": True,
+                    "requires_rag": False,
+                    "requires_llm": False,
+                    "reason": "Authoritative listing of events scheduled on a festival day."
+                }
+
+        # Event listing without explicit day ("how many events are there?")
+        if ("how many" in norm or "list" in norm or "which" in norm) and "event" in norm:
+            return {
+                "category": "festos_data",
+                "domain": "schedule",
+                "query_type": "event_list",
+                "day": None,
+                "retrieval_mode": "structured",
+                "requires_database": True,
+                "requires_rag": False,
+                "requires_llm": False,
+                "reason": "Authoritative listing of scheduled events."
+            }
+
         if "conflict" in norm or "clash" in norm or "double-booked" in norm or "overlap" in norm:
             return {
                 "category": "festos_data",
@@ -488,6 +522,37 @@ class IntentRouter:
             }
 
         # ------------------- VENDORS & DIETARY -------------------
+        # Diet-specific questions (e.g. "which vendor serves vegetarian and halal")
+        # must win over generic vendor compliance routing.
+        diet_tags: list[str] = []
+        t = norm.replace("-", " ")
+        if "non veg" in t or "nonvegetarian" in t:
+            diet_tags.append("non-vegetarian")
+        if "vegetarian" in t or re.search(r"\bveg\b", t):
+            diet_tags.append("vegetarian")
+        if "vegan" in t:
+            diet_tags.append("vegan")
+        if "halal" in t:
+            diet_tags.append("halal")
+        if "jain" in t:
+            diet_tags.append("jain")
+        if "nut" in t and ("allergy" in t or "free" in t):
+            diet_tags.append("nut allergy")
+        if "gluten" in t:
+            diet_tags.append("gluten-free")
+        if diet_tags or "dietary coverage" in norm or "diet coverage" in norm:
+            return {
+                "category": "festos_data",
+                "domain": "vendors",
+                "query_type": "dietary_coverage",
+                "tags": diet_tags or None,
+                "retrieval_mode": "structured",
+                "requires_database": True,
+                "requires_rag": False,
+                "requires_llm": False,
+                "reason": "Authoritative dietary coverage and vendor menu lookup."
+            }
+
         if "vendor" in norm:
             if "compliance" in norm or "hygiene" in norm or "certificate" in norm or "expired" in norm:
                 return {
