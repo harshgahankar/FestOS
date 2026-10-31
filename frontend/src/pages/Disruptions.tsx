@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { api } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { api, apiUpload, ApiError } from "../api";
 import type { DisruptionRow, ActResp, ListResp, PreviewResp, Report, Venue } from "../disTypes";
 import { TICKET_TYPES } from "../disTypes";
 import ReasonModal from "../components/ReasonModal";
@@ -26,6 +26,28 @@ export default function Disruptions() {
   const [modal, setModal] = useState<Modal>(null);
   const [modalBusy, setModalBusy] = useState(false);
   const [modalErr, setModalErr] = useState("");
+  const [packInfo, setPackInfo] = useState<{ imported: number; total: number; failed: { scenario_id: string; error: string }[] } | null>(null);
+  const packInput = useRef<HTMLInputElement>(null);
+
+  async function uploadPack(list: FileList | null) {
+    const f = list?.[0];
+    if (!f) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const form = new FormData();
+      form.append("file", f);
+      const out = await apiUpload<{ total: number; imported: number; failed: { scenario_id: string; error: string }[] }>(
+        "/disruptions/scenario-pack", form);
+      setPackInfo(out);
+      if (packInput.current) packInput.current.value = "";
+      void load();
+    } catch (e) {
+      setErr(`refused: ${e instanceof ApiError ? e.detail : e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function load() {
     setBusy(true);
@@ -184,6 +206,33 @@ export default function Disruptions() {
             className="rounded-sm bg-mustard px-4 py-2 text-xs font-bold uppercase tracking-wider text-crimson-deep hover:bg-saffron disabled:opacity-50">
             preview impact
           </button>
+        </div>
+        <div className="mt-4 border-t-2 border-crimson-dark/15 pt-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-ink/70">or upload the judge scenario pack</p>
+          <label className="mt-1 inline-block cursor-pointer rounded-sm border border-teal-dark/40 bg-white/60 px-2 py-1 text-xs font-semibold text-teal-dark hover:bg-teal/20">
+            <input
+              ref={packInput}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => void uploadPack(e.target.files)}
+            />
+            choose a scenario CSV → every row becomes a previewed ticket here
+          </label>
+          {packInfo && (
+            <div className="mt-2 rounded-sm border border-teal-dark/30 bg-teal/10 p-2 text-xs">
+              <p className="font-bold text-teal-dark">
+                pack loaded · {packInfo.imported}/{packInfo.total} scenarios previewed as tickets below
+              </p>
+              {packInfo.failed.length > 0 && (
+                <ul className="mt-1 list-inside list-disc text-crimson-deep">
+                  {packInfo.failed.map((f) => (
+                    <li key={f.scenario_id}><strong>{f.scenario_id}</strong> — {f.error}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </Paper>
 

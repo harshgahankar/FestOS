@@ -56,3 +56,22 @@ export async function api<T>(
 export function apiWrite<T>(path: string, body: Record<string, unknown>): Promise<T> {
   return api<T>(path, { method: "POST", body });
 }
+
+/** POST raw FormData (file uploads). No explicit Content-Type — the browser
+ *  must set the multipart boundary itself. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
+  const res = await fetch(BASE + path, { method: "POST", headers, body: form });
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (typeof body?.detail === "string") detail = body.detail;
+    } catch {
+      /* non-JSON error body -> keep the status text */
+    }
+    throw new ApiError(res.status, detail);
+  }
+  return (await res.json()) as T;
+}

@@ -5,9 +5,12 @@ needed to restore the prior state; revert never guesses. Reuses the allocator fo
 hostel closure (displaced-only), the scheduler for venue change and the vendor
 engine for shutdown rerouting.
 """
-from datetime import datetime
+import csv
+import io
+import re
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app import schemas
@@ -232,6 +235,146 @@ def list_disruptions(user=Depends(require_role("director")),
         "impact_report": r.impact_report, "applied_by": r.applied_by,
         "applied_at": _d(r.applied_at),
         "has_snapshot": r.revert_snapshot is not None} for r in rows]}
+
+
+# --------------------------------------------------- judge scenario CSV pack --
+# A judge scenario CSV (scenario_id, disruption_type, entity_type, entity_id,
+# related_entity_id, effective_datetime, action, field_to_change, new_value,
+# severity, reason, ...) is NOT the data pack. Each row is converted to an
+# existing engine payload and immediately previewed, so the tickets land in the
+# registry as `previewed` and the judge only has to apply them one by one.
+SCENARIO_TYPE_ALIASES = {"duplicate_merchandise_claim": "duplicate_merch_claim"}
+
+
+def _scenario_payload(db: Session, dtype: str, row: dict) -> tuple[dict, str]:
+    """Map one scenario CSV row to an engine payload. (payload, note)."""
+    ent = (row.get("entity_id") or "").strip()
+    rel = (row.get("related_entity_id") or "").strip()
+    eff = (row.get("effective_datetime") or "").strip()
+    note = ""
+
+    if dtype == "late_contingent":
+        payload = {"contingent": ent}
+        arrival = eff
+        if (row.get("field_to_change") or "").strip() == "arrival_delay_minutes":
+            try:
+                delay = int(float(row.get("new_value") or 0))
+                if eff:
+                    arrival = (datetime.fromisoformat(eff) +
+                               timedelta(minutes=delay)).isoformat()
+                    note = f"arrival shifted +{delay} min from {eff}"
+            except ValueError:
+                pass
+        payload["new_arrival"] = arrival
+        return payload, note
+
+    if dtype == "duplicate_record":
+        cand_key = rel or ((row.get("new_value") or "").strip()
+                           if (row.get("field_to_change") or "").strip() == "duplicate_candidate"
+                           else "")
+        cand = (db.query(Participant).filter(Participant.raw_id == cand_key).first()
+                if cand_key else None)
+        if cand is None:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"duplicate candidate {cand_key or '(missing)'} is not a row in "
+                f"the live data (synthetic key) — the engine only merges real "
+                f"imported rows; raise a manual duplicate_record ticket with the "
+                f"actual duplicate raw id")
+        return {"duplicate_raw_id": cand_key, "canonical_raw_id": ent}, note
+
+    if dtype == "hostel_closure":
+        return {"room_raw_ids": [part.strip() for part in ent.split(",") if part.strip()]}, note
+
+    if dtype == "equipment_failure":
+        qty = 1
+        m = re.search(r"(\d+)\s*units?", row.get("expected_state_change") or "")
+        if m:
+            qty = int(m.group(1))
+            note = f"qty inferred from scenario text ({qty} units)"
+        return {"sku": ent, "qty": qty}, note
+
+    if dtype == "venue_change":
+        venue = db.query(Venue).filter(Venue.raw_id == ent).first()
+        if venue is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND,
+                                f"venue {ent} not found")
+        target = db.get(Venue, rel) if rel else None
+        if target is None and rel:                      # raw id like V02
+            target = db.query(Venue).filter(Venue.raw_id == rel).first()
+        events = db.query(Event).filter(Event.venue_id == venue.id).all()
+        if len(events) != 1:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"{len(events)} events are scheduled at venue {ent} — a venue "
+                f"closure needs exactly one affected event; schedule or pick one "
+                f"manually in the Disruption Desk (venue_change ticket)")
+        if target is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND,
+                                f"candidate venue {rel or '(missing)'} not found")
+        return {"event_raw_id": events[0].raw_id, "new_venue_id": target.id}, \
+            f"event {events[0].raw_id} relocates {ent} → {rel}"
+
+    if dtype == "vendor_shutdown":
+        return {"raw_id": ent}, note
+
+    if dtype == "duplicate_merch_claim":
+        return {"participant_raw_id": ent, "action": "refuse"}, note
+
+    raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                        f"cannot map scenario type '{dtype}'")
+
+
+@router.post("/scenario-pack")
+def upload_scenario_pack(file: UploadFile,
+                         user=Depends(require_role("director")),
+                         db: Session = Depends(get_db)):
+    """Convert a judge disruption-test CSV into previewed Disruption tickets."""
+    if not (file.filename or "").endswith(".csv"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "scenario pack must be a .csv file")
+    text = file.file.read().decode("utf-8-sig")
+    results = []
+    ids = []
+    for i, row in enumerate(csv.DictReader(io.StringIO(text))):
+        sid = (row.get("scenario_id") or f"row{i + 2}").strip()
+        raw_type = (row.get("disruption_type") or "").strip()
+        dtype = SCENARIO_TYPE_ALIASES.get(raw_type, raw_type)
+        try:
+            _validate_type(dtype)
+            payload, note = _scenario_payload(db, dtype, row)
+            payload["scenario_id"] = sid
+            d = Disruption(type=dtype, payload=payload, status="mapping")
+            db.add(d)
+            db.flush()
+            ctx = _PREVIEWS[dtype](db, payload)
+            if ctx is None:
+                db.delete(d)
+                results.append({"scenario_id": sid, "ok": False,
+                                "error": f"target {row.get('entity_id')} not in "
+                                         f"the live data — engine cannot preview it"})
+                continue
+            d.impact_report = ctx["report"]
+            d.status = "previewed"
+            reason = (row.get("reason") or "").strip() or "scenario pack preview"
+            log_change(db, user.username, "disruption", d.id, None,
+                       {"type": dtype, "scenario_id": sid,
+                        "payload": payload, "summary": _summary(ctx)},
+                       reason, kind="manual")
+            results.append({"scenario_id": sid, "ok": True,
+                            "disruption_id": d.id, "type": dtype, "note": note})
+            ids.append(d.id)
+        except HTTPException as e:
+            results.append({"scenario_id": sid, "ok": False, "error": e.detail})
+        except Exception as e:                           # engine edge cases
+            db.rollback()
+            results.append({"scenario_id": sid, "ok": False,
+                            "error": f"{type(e).__name__}: {e}"})
+    db.commit()
+    ok = [r for r in results if r["ok"]]
+    return {"total": len(results), "imported": len(ok),
+            "failed": [r for r in results if not r["ok"]],
+            "disruption_ids": ids}
 
 
 # ==================================================================== TYPE 1 ==

@@ -34,6 +34,24 @@ export type AuditEntry = {
   reason: string | null;
 };
 
+export type ImportReport = {
+  run_ok: boolean;
+  files_loaded: string[];
+  rows_imported: Record<string, number>;
+  issues_by_code: Record<string, number>;
+  reconciliation: {
+    raw_imported: number;
+    duplicates_merged: number;
+    quarantined: number;
+    cancelled_test_junk: number;
+    flagged: number;
+    active: number;
+    expected_participants: number;
+    gap_vs_expected: number;
+    note: string;
+  };
+};
+
 export type AuditResp = {
   total: number;
   limit: number;
