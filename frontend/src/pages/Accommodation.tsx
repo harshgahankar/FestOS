@@ -8,6 +8,18 @@ import { Badge, Btn, Paper, Unknown } from "../components/ui";
 
 const PRESETS = ["min_cost", "max_cohesion", "balanced"] as const;
 
+const PRESET_LABELS: Record<string, string> = {
+  min_cost: "Lowest cost",
+  max_cohesion: "Keep groups together",
+  balanced: "Balanced",
+};
+
+const PRESET_DESCS: Record<string, string> = {
+  min_cost: "cheapest stays first — contingents may be split",
+  max_cohesion: "same floor & rooms kept together; biggest stay first",
+  balanced: "cheapest first, but prefers same floor & groups together",
+};
+
 type Modal =
   | { kind: "lock"; planId: string }
   | { kind: "assign" }
@@ -113,9 +125,13 @@ export default function Accommodation() {
         </Paper>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <Paper title="Shortage — live dry-run, no plan stored (min_cost)">
+          <Paper title="Beds check" className="flex flex-col">
             <AutoLoader url="/accommodation/shortage">
-              {(d) => <ShortageView d={d as Record<string, number>} />}
+              {(d) => (
+                <div className="flex flex-1 items-center">
+                  <ShortageView d={d as Record<string, number>} />
+                </div>
+              )}
             </AutoLoader>
           </Paper>
           <Paper title="Review queue — unclear gender/consent needs a human">
@@ -185,7 +201,7 @@ function AllocateForm({ busy, onRun }: { busy: boolean; onRun: (preset: string, 
           onChange={(e) => setPreset(e.target.value as (typeof PRESETS)[number])}
           className="mt-1 block rounded-sm border-2 border-teal-dark/40 bg-white/60 px-2 py-1.5 text-sm font-normal text-ink normal-case tracking-normal"
         >
-          {PRESETS.map((p) => <option key={p}>{p}</option>)}
+          {PRESETS.map((p) => <option key={p} value={p}>{PRESET_LABELS[p]} — {PRESET_DESCS[p]}</option>)}
         </select>
       </label>
       <label className="min-w-[16rem] flex-1 text-xs font-bold uppercase text-ink/70">
@@ -213,14 +229,14 @@ function PlanCard({ plan }: { plan: AllocateResp }) {
     <div className="mb-3 rounded-sm border-2 border-teal-dark/40 bg-white/55 p-3">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Badge sev="info">plan #{plan.plan_id}</Badge>
-        <Badge sev="neutral">{plan.preset}</Badge>
+        <Badge sev="neutral">{PRESET_LABELS[plan.preset] ?? plan.preset}</Badge>
         <Badge sev={plan.violations.length ? "error" : "good"}>
           {plan.violations.length ? `${plan.violations.length} violations` : "no violations"}
         </Badge>
         <span className="text-xs font-semibold text-ink/70">cost ₹{plan.cost}</span>
         <span className="text-xs text-ink/60">audit #{plan.audit_entry}</span>
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-3 gap-4 sm:grid-cols-5">
         <Mini n={s.requested} l="requests" />
         <Mini n={s.hostel_beds_used} l="hostel beds" />
         <Mini n={s.external_beds_used} l="external beds" />
@@ -253,7 +269,7 @@ function LifecycleRow({ planId, onChangeId, onActivate, onLock }: {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   return (
-    <div className="flex flex-wrap items-end gap-2 rounded-sm border border-ink/20 bg-white/40 p-2">
+    <div className="flex flex-wrap items-end gap-x-4 gap-y-3 rounded-sm border border-ink/20 bg-white/40 p-3">
       <label className="text-xs font-bold uppercase text-ink/70">
         plan id
         <input value={planId} onChange={(e) => { onChangeId(e.target.value); setErr(""); }}
@@ -272,7 +288,7 @@ function LifecycleRow({ planId, onChangeId, onActivate, onLock }: {
 
 function ShortageView({ d }: { d: Record<string, number> }) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid h-full auto-rows-fr grid-cols-2 gap-4 sm:grid-cols-4">
       <Mini n={d.requested_count ?? 0} l="requested" />
       <Mini n={d.hostel_beds_used ?? 0} l="hostel used" />
       <Mini n={d.external_beds_used ?? 0} l="external used" />
@@ -356,9 +372,9 @@ function F2({ label, v }: { label: string; v: string }) {
 
 function Mini({ n, l, bad = false }: { n: number; l: string; bad?: boolean }) {
   return (
-    <div className={`rounded-sm border-2 p-2 text-center ${bad ? "border-crimson-dark/40 bg-mustard/25" : "border-crimson-dark/20 bg-white/50"}`}>
-      <p className="font-display text-2xl text-ink">{n}</p>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-ink/60">{l}</p>
+    <div className={`flex h-full flex-col items-center justify-center rounded-sm border-2 px-3 py-4 text-center shadow-xs ${bad ? "border-crimson-dark/40 bg-mustard/25" : "border-crimson-dark/20 bg-white/50"}`}>
+      <p className="font-display text-3xl text-ink">{n}</p>
+      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-ink/60">{l}</p>
     </div>
   );
 }

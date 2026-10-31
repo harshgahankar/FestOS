@@ -16,6 +16,12 @@ function Tile({ big, label, sub = [] }: { big: string | number; label: string; s
   );
 }
 
+const PRESET_LABELS: Record<string, string> = {
+  min_cost: "Lowest cost",
+  max_cohesion: "Keep groups together",
+  balanced: "Balanced",
+};
+
 function OccupancyTile({ occ }: { occ: Kpis["occupancy"] }) {
   if (!occ) {
     return (
@@ -29,7 +35,7 @@ function OccupancyTile({ occ }: { occ: Kpis["occupancy"] }) {
   const parts = Object.entries(occ)
     .filter(([k]) => k !== "plan_id" && k !== "preset")
     .map(([k, v]) => `${k}: ${String(v)}`);
-  return <Tile big={String(occ.preset)} label={`occupancy · plan #${occ.plan_id}`} sub={parts} />;
+  return <Tile big={PRESET_LABELS[occ.preset] ?? occ.preset} label={`occupancy · plan #${occ.plan_id}`} sub={parts} />;
 }
 
 export default function Control() {
