@@ -10,6 +10,7 @@ import {
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInput } from "./ChatInput";
 import { ChatLoading } from "./ChatLoading";
+import { speak, stopSpeaking, ttsSupported } from "./voice";
 
 type Props = {
   isOpen: boolean;
@@ -64,6 +65,7 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [reindexing, setReindexing] = useState(false);
   const [reindexSuccess, setReindexSuccess] = useState<string | null>(null);
+  const [voiceOn, setVoiceOn] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +100,12 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  // Stop speech when the panel closes or unmounts
+  useEffect(() => {
+    if (!isOpen) stopSpeaking();
+    return () => stopSpeaking();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSend = async (text: string) => {
@@ -125,6 +133,7 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, asstMsg]);
+      if (voiceOn) speak(res.answer);
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : "Failed to communicate with FestOS AI.";
       setErrorMsg(detail);
@@ -146,6 +155,7 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
     setConversationId(null);
     setErrorMsg(null);
     setShowHistory(false);
+    stopSpeaking();
   };
 
   const handleLoadConversation = async (convId: string) => {
@@ -195,48 +205,80 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
       className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l-2 border-crimson-dark/30 bg-cream shadow-2xl sm:w-[480px]"
     >
       {/* Refined Executive Panel Header */}
-      <div className="border-b border-crimson-dark/20 bg-crimson-dark px-4 py-3 text-cream">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream/10 border border-cream/20 text-mustard shadow-xs">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <div className="border-b border-crimson-dark/20 bg-crimson-dark px-3 py-2.5 text-cream">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cream/10 border border-cream/20 text-mustard shadow-xs">
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2L14.4 7.6L20 10L14.4 12.4L12 18L9.6 12.4L4 10L9.6 7.6L12 2Z" />
               </svg>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-base font-bold tracking-wide text-cream">
+                <h2 className="font-display text-sm font-bold tracking-wide text-cream truncate">
                   FestOS Assistant
                 </h2>
-                <span className="flex items-center gap-1 rounded-full bg-crimson-deep/80 px-2 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider text-cream/90 border border-cream/15">
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-crimson-deep/80 px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-cream/90 border border-cream/15">
                   <span className={`h-1.5 w-1.5 rounded-full ${health?.status === "ok" ? "bg-teal animate-pulse" : "bg-mustard"}`} />
                   {health?.ai_enabled ? "Active" : "Deterministic"}
                 </span>
               </div>
-              <p className="text-[11px] text-cream/65">Event Operations Intelligence</p>
+              <p className="text-[10px] text-cream/65 truncate">Event Operations Intelligence</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setShowHistory(!showHistory)}
               title="View past chats"
-              className="flex items-center gap-1 rounded-md border border-cream/20 bg-crimson-deep/60 px-2 py-1 text-xs font-semibold text-cream/90 hover:bg-crimson-deep hover:text-cream transition"
+              className="flex items-center gap-1 rounded-md border border-cream/20 bg-crimson-deep/60 px-1.5 py-1 text-xs font-semibold text-cream/90 hover:bg-crimson-deep hover:text-cream transition"
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              <span>{showHistory ? "Chat" : "History"}</span>
+              <span className="hidden sm:inline">{showHistory ? "Chat" : "History"}</span>
             </button>
+            {ttsSupported && (
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !voiceOn;
+                  setVoiceOn(next);
+                  if (!next) stopSpeaking();
+                }}
+                title={voiceOn ? "Voice replies on — click to mute" : "Voice replies muted — click to speak"}
+                aria-label={voiceOn ? "Mute assistant voice" : "Speak assistant replies"}
+                className={`flex items-center rounded-md border px-2 py-1 text-xs font-bold transition ${
+                  voiceOn
+                    ? "border-teal/60 bg-teal/30 text-cream hover:bg-teal/50"
+                    : "border-cream/20 bg-crimson-deep/60 text-cream/60 hover:bg-crimson-deep hover:text-cream"
+                }`}
+              >
+                {voiceOn ? (
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5 6 9H2v6h4l5 4z" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                ) : (
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5 6 9H2v6h4l5 4z" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={handleNewChat}
               title="Start new conversation"
-              className="flex items-center gap-1 rounded-md border border-mustard/50 bg-mustard/90 px-2 py-1 text-xs font-bold text-ink hover:bg-mustard hover:shadow-xs transition"
+              className="flex items-center gap-0.5 rounded-md border border-mustard/50 bg-mustard/90 px-1.5 py-1 text-xs font-bold text-ink hover:bg-mustard hover:shadow-xs transition"
             >
-              <span>+ New</span>
+              <span>+</span>
+              <span className="hidden sm:inline">New</span>
             </button>
             <button
               type="button"
@@ -374,11 +416,7 @@ export function ChatbotPanel({ isOpen, onClose, userRole = "viewer" }: Props) {
       <ChatInput
         disabled={loading}
         onSend={(t) => handleSend(t)}
-        placeholder={
-          userRole === "director"
-            ? "Ask about participants, conflicts, inventory, or vendors…"
-            : `Ask a question within ${userRole} scope…`
-        }
+        placeholder="ask anything"
       />
     </aside>
   );
