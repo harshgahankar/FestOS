@@ -187,8 +187,8 @@ export default function Team() {
             <div className="text-[12px] font-mono font-bold tracking-wider text-ink/70 uppercase mb-3">
               ACCESS MATRIX
             </div>
-            <div className="overflow-x-auto rounded-sm border border-crimson-dark/15 bg-white/40">
-              <table className="w-full text-left border-collapse min-w-[860px]">
+            <div className="overflow-x-auto custom-scrollbar rounded-sm border border-crimson-dark/15 bg-white/40">
+              <table className="w-full text-left border-collapse min-w-[840px]">
                 <thead className="bg-crimson-dark/10 text-[11px] font-mono uppercase tracking-wider text-ink/75">
                   <tr>
                     <th className="px-4 py-2.5 font-bold">ROLE</th>
@@ -247,7 +247,7 @@ export default function Team() {
               </div>
             </div>
 
-            <div className="overflow-x-auto max-h-[560px] overflow-y-auto rounded-sm border border-crimson-dark/15 bg-white/40">
+            <div className="overflow-x-auto max-h-[560px] overflow-y-auto custom-scrollbar rounded-sm border border-crimson-dark/15 bg-white/40">
               <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead className="sticky top-0 z-10 bg-crimson-dark/15 backdrop-blur-sm text-[11px] font-mono uppercase tracking-wider text-ink/75 border-b border-crimson-dark/15">
                   <tr>
