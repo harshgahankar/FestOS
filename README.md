@@ -5,8 +5,8 @@ assumptions & data findings: `docs/ASSUMPTIONS.md`). Phases 0–6 complete:
 skeleton, models/audit/auth, import & reconciliation, participants/contingents
 (masking + reveal), the four pure engines (scheduler, inventory/merch,
 vendors, accommodation allocator) behind audited API endpoints, the disruption
-engine (preview/apply/revert), and the control center (attention queue, KPIs,
-audit browser).
+engine (preview/apply/revert), the control center (attention queue, KPIs,
+audit browser), and GeoCommand — a role-scoped, database-backed operations map.
 
 ## Quick start
 
@@ -56,6 +56,21 @@ visible in the Supabase Table Editor; `seed.py` then creates + fills them there.
 Tests always run against an isolated in-memory SQLite regardless of `.env`.
 Note: seed over the remote pooler takes a few minutes (the importer batches
 writes per file — one roundtrip per phase, not per row).
+
+### Frontend (including GeoCommand)
+
+```
+cd frontend
+npm install
+npm run dev      # http://localhost:5173, proxies /api to :8000
+npm run build    # typecheck + production bundle
+```
+
+The operations map lives at `/map` for every signed-in role. It uses
+OpenStreetMap tiles; address search optionally proxies Nominatim
+(`FESTOS_GEOCODING_ENABLED=false` disables it, `FESTOS_NOMINATIM_URL` overrides
+the provider). Set the site centre once as director via **GeoCommand → map
+centre**; until then the map opens on a neutral country view.
 
 ## Auth
 
@@ -123,6 +138,15 @@ python -m pytest tests -q
 - Control center (director only): `GET /control/attention` (merged findings
   inbox, severity-sorted), `GET /control/kpis` (occupancy is null until a plan
   is active), `GET /control/audit` (filterable audit browser, A-35).
+- GeoCommand map: `GET /map/locations`, `/locations/{id}`, `/summary`,
+  `/accommodation`, `/events`, `/logistics`, `/vendors`, `/vendors/{id}`,
+  `/incidents`, `/unmapped`, `/entities`, `/settings`, `/duties`;
+  `POST /map/locations`, `/locations/{id}/verify`, `/duties`, `/geocode`;
+  `PATCH /locations/{id}`, `/settings`; `DELETE /duties/{id}`. Geography is a
+  nullable registry: no coordinate is inferred from the CSV pack, pins start
+  `unverified`, and a lead's edit preserves links owned by other roles. Role
+  visibility is enforced server-side (leads see their layer, volunteers only
+  duty-linked pins, viewer venues only).
 - **FestOS AI Operations Assistant** ("Ask your festival operations data"):
   `GET /chatbot/health` (status & provider capabilities), `POST /chatbot/chat`
   (grounded natural-language operations query), `GET /chatbot/conversations`
@@ -142,6 +166,9 @@ python -m pytest tests -q
 - Reconciliation is 2,836 → 2,831 active vs ~2,400 expected; the +431 gap is
   surfaced, not hidden (A-08).
 - Engine purity: engines may touch SQLAlchemy sessions but never import FastAPI.
+- GeoCommand maps nothing until an organiser saves real coordinates; the picked
+  or geocoded point stays unverified until confirmed on site. The dataset has no
+  GPS, so an empty map is an honest result, not an error.
 
 ## Hard rules honoured
 

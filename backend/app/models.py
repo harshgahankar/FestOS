@@ -1,7 +1,8 @@
 from datetime import datetime, date, time, timezone
 from typing import Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, JSON, String, Time
+from sqlalchemy import (Boolean, Date, DateTime, Float, ForeignKey, Integer, JSON,
+                        String, Time, UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -328,6 +329,60 @@ class ConfigRule(_Base, Base):
     key: Mapped[str] = mapped_column(String, unique=True)
     value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class MapLocation(_Base, Base):
+    """Persistent location registry. Coordinates are nullable on purpose.
+
+    FestOS source data carries no verified GPS coordinates; a location only gets
+    plotted after an authorised organiser places and saves a real pin.
+    """
+    __tablename__ = "map_locations"
+    name: Mapped[str] = mapped_column(String, index=True)
+    location_type: Mapped[str] = mapped_column(String, index=True)
+    latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    campus_zone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    parent_location_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("map_locations.id"), nullable=True)
+    source_reference: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    coordinate_verification_status: Mapped[str] = mapped_column(
+        String, default="unverified")   # unverified/verified/rejected
+    last_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class MapLocationLink(_Base, Base):
+    """Normalised mapping between a registry location and an existing FestOS record.
+
+    entity_type: hostel_block | external_stay | venue | vendor |
+                 inventory_location | incident
+    entity_id:   block name, raw_id, inventory label or disruption id.
+    """
+    __tablename__ = "map_location_links"
+    __table_args__ = (
+        UniqueConstraint("entity_type", "entity_id", name="uq_map_link_entity"),
+    )
+    location_id: Mapped[int] = mapped_column(ForeignKey("map_locations.id"), index=True)
+    entity_type: Mapped[str] = mapped_column(String, index=True)
+    entity_id: Mapped[str] = mapped_column(String, index=True)
+
+
+class MapDutyAssignment(_Base, Base):
+    """Minimum assignment-to-location link for the volunteer map.
+
+    The pack has no auth-user -> core-team mapping, so duties are explicit,
+    operator-created records; the map never invents a volunteer's tasks.
+    """
+    __tablename__ = "map_duty_assignments"
+    username: Mapped[str] = mapped_column(String, index=True)
+    location_id: Mapped[int] = mapped_column(ForeignKey("map_locations.id"))
+    task_type: Mapped[str] = mapped_column(String, default="task")
+    label: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    starts_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    ends_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 class ChatConversation(_Base, Base):

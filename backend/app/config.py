@@ -246,6 +246,38 @@ VENDORS = {
     "MEALS_PER_DAY": 2,               # per on-site participant per day (coverage unit)
 }
 
+# ------------------------------------------------------------- GeoCommand map --
+MAP = {
+    "TIMEZONE": "Asia/Kolkata",
+    "OCCUPANCY_APPROACHING_PCT": 80.0,
+    "UPCOMING_SOON_MINUTES": 60,
+    # A neutral country view when no organiser has configured the festival centre.
+    # This is NOT a campus coordinate and is never used as a venue marker.
+    "FALLBACK_CENTER": (20.5937, 78.9629),
+    "FALLBACK_ZOOM": 4,
+    "DEFAULT_ZOOM": 16,
+    "POLL_SECONDS": 60,
+    "MAX_LOCATIONS_PER_PAGE": 500,
+}
+MAP_LOCATION_TYPES = ("hostel_block", "external_stay", "venue", "vendor",
+                      "inventory_location", "incident_location")
+MAP_ROLE_TYPES = {
+    "director": set(MAP_LOCATION_TYPES),
+    "accommodation_lead": {"hostel_block", "external_stay"},
+    "events_lead": {"venue"},
+    "logistics_lead": {"inventory_location"},
+    "vendor_lead": {"vendor"},
+    "volunteer": set(),
+    "viewer": {"venue"},
+}
+MAP_MANAGER_ROLES = ("director", "accommodation_lead", "events_lead",
+                     "logistics_lead", "vendor_lead")
+MAP_TASK_TYPES = ("task", "pickup", "dropoff", "incident_report")
+MAP_ENTITY_TYPES = ("hostel_block", "external_stay", "venue", "vendor",
+                    "inventory_location", "incident")
+NOMINATIM_URL = os.getenv("FESTOS_NOMINATIM_URL", "https://nominatim.openstreetmap.org")
+GEOCODING_ENABLED = os.getenv("FESTOS_GEOCODING_ENABLED", "true").lower() in ("true", "1", "yes")
+
 # ------------------------------------------------------------ allocation rules --
 ALLOC_HARD_CONSTRAINTS = ("ACCESSIBILITY", "PRIVACY", "GENDER_SEGREGATION",
                           "CAPACITY", "READINESS", "WINDOWS")

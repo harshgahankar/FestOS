@@ -15,6 +15,7 @@ from app.routers import disruptions as disruptions_router
 from app.routers import control as control_router
 from app.routers import chatbot as chatbot_router
 from app.routers import team as team_router
+from app.routers import map as map_router
 
 
 @asynccontextmanager
@@ -48,6 +49,7 @@ app.include_router(disruptions_router.router)
 app.include_router(control_router.router)
 app.include_router(chatbot_router.router)
 app.include_router(team_router.router)
+app.include_router(map_router.router)
 
 
 @app.get("/health")

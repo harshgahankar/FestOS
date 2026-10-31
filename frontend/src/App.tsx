@@ -13,6 +13,7 @@ import Schedule from "./pages/Schedule";
 import Inventory from "./pages/Inventory";
 import Vendors from "./pages/Vendors";
 import Team from "./pages/Team";
+import GeoCommand from "./pages/GeoCommand";
 import Disruptions from "./pages/Disruptions";
 import { Spinner } from "./components/ui";
 
@@ -67,6 +68,7 @@ function Boot() {
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/vendors" element={<Vendors />} />
                 <Route path="/team" element={<Team />} />
+                <Route path="/map" element={<GeoCommand />} />
                 <Route path="/disruptions" element={<Disruptions />} />
                 <Route path="*" element={<ComingSoon module="Unknown page" />} />
               </Routes>

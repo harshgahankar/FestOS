@@ -221,3 +221,132 @@ body {
   display: none;  /* Chrome, Safari, Opera */
 }
 
+/* ==========================================================================
+   GeoCommand — Leaflet markers, clusters, tooltips and pick mode
+   ========================================================================== */
+
+.leaflet-container {
+  background: #e6dcc6;
+  font-family: var(--font-body);
+}
+
+.gc-marker {
+  background: transparent;
+  border: none;
+}
+
+.gc-marker:focus {
+  outline: none;
+}
+
+.gc-pin {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  display: flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--color-ink);
+  border-radius: 50% 50% 50% 0;
+  background: var(--gc-pin, #6b625a);
+  box-shadow: 0 2px 0 rgba(64, 16, 18, 0.35);
+  transform: rotate(-45deg);
+  transition: filter 120ms ease;
+}
+
+.gc-pin:hover {
+  filter: brightness(1.08);
+}
+
+.gc-pin-symbol {
+  display: block;
+  color: #fff7e6;
+  font-family: var(--font-block);
+  font-size: 12px;
+  line-height: 1;
+  transform: rotate(45deg);
+  text-shadow: 0 1px 0 rgba(64, 16, 18, 0.55);
+}
+
+.gc-pin-alert {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-cream);
+  border-radius: 50%;
+  background: var(--color-crimson);
+  transform: rotate(45deg);
+  animation: gc-pulse 1.8s ease-out infinite;
+}
+
+@keyframes gc-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(163, 36, 43, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(163, 36, 43, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(163, 36, 43, 0); }
+}
+
+.gc-cluster-wrap {
+  background: transparent;
+  border: none;
+}
+
+.gc-cluster {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--color-mustard);
+  border-radius: 50%;
+  background: var(--color-crimson-dark);
+  color: var(--color-cream);
+  font-family: var(--font-block);
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 3px 0 rgba(64, 16, 18, 0.4);
+}
+
+.gc-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.gc-tip strong {
+  font-size: 12px;
+}
+
+.gc-tip span {
+  color: rgba(64, 16, 18, 0.68);
+}
+
+.gc-tip em {
+  color: var(--color-saffron);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gc-tip .gc-tip-alert {
+  color: var(--color-crimson-deep);
+}
+
+.gc-picking {
+  cursor: crosshair !important;
+}
+
+.gc-picking .leaflet-interactive,
+.gc-picking .leaflet-container {
+  cursor: crosshair !important;
+}
+

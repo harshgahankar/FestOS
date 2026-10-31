@@ -37,6 +37,22 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    key: "map",
+    label: "GeoCommand",
+    path: "/map",
+    roles: [
+      "director", "accommodation_lead", "events_lead", "logistics_lead",
+      "vendor_lead", "volunteer", "viewer",
+    ],
+    icon: (
+      <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 20 3 17V4l6 3 6-3 6 3v13l-6-3z" />
+        <path d="M9 7v13M15 4v13" />
+        <circle cx="12" cy="11" r="2" />
+      </svg>
+    ),
+  },
+  {
     key: "people",
     label: "Participants",
     path: "/people",
@@ -186,7 +202,7 @@ export default function Shell({ children }: { children?: ReactNode }) {
     {
       label: "Operate",
       sub: items.filter((n) =>
-        ["control", "people", "accom", "schedule", "inventory", "vendors"].includes(n.key)
+        ["control", "map", "people", "accom", "schedule", "inventory", "vendors"].includes(n.key)
       ),
     },
     { label: "Govern", sub: items.filter((n) => ["disruptions", "team", "audit"].includes(n.key)) },

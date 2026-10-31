@@ -159,3 +159,56 @@ class DisruptionIn(BaseModel):
     payload: dict[str, Any]
     return_details: bool = False
     reason: Optional[str] = None
+
+
+# ---------------------------------------------------------------- GeoCommand --
+class MapLinkIn(BaseModel):
+    entity_type: str
+    entity_id: str
+
+
+class MapLocationIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    location_type: str
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+    address: Optional[str] = Field(default=None, max_length=500)
+    campus_zone: Optional[str] = Field(default=None, max_length=120)
+    parent_location_id: Optional[int] = None
+    source_reference: Optional[str] = Field(default=None, max_length=500)
+    links: list[MapLinkIn] = Field(default_factory=list)
+    reason: Optional[str] = None
+
+
+class MapLocationPatchIn(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    location_type: Optional[str] = None
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+    address: Optional[str] = Field(default=None, max_length=500)
+    campus_zone: Optional[str] = Field(default=None, max_length=120)
+    parent_location_id: Optional[int] = None
+    source_reference: Optional[str] = Field(default=None, max_length=500)
+    links: Optional[list[MapLinkIn]] = None
+    reason: Optional[str] = None
+
+
+class MapSettingsIn(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    zoom: int = Field(default=16, ge=1, le=20)
+    label: Optional[str] = Field(default=None, max_length=200)
+    reason: Optional[str] = None
+
+
+class MapDutyIn(BaseModel):
+    username: str = Field(min_length=1, max_length=120)
+    location_id: int
+    task_type: str = "task"
+    label: Optional[str] = Field(default=None, max_length=200)
+    starts_at: Optional[str] = None
+    ends_at: Optional[str] = None
+
+
+class MapGeocodeIn(BaseModel):
+    query: str = Field(min_length=1, max_length=300)
