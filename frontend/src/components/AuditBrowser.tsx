@@ -8,6 +8,14 @@ const PAGE = 50;
 
 const DEFAULT_FILTERS = { entity_type: "", entity_id: "", actor: "", kind: "" };
 
+const ENTITY_TYPES = [
+  "allocation_plan", "allocation", "participant", "hostel_room",
+  "event", "vendor", "vendor_order", "merch_issue",
+  "inventory_movement", "disruption", "core_team",
+];
+
+const KINDS = ["system", "manual", "override", "reveal"];
+
 /** changed keys of before -> after; every audit row shows honest before/after */
 function diff(before: Record<string, unknown> | null, after: Record<string, unknown> | null) {
   const keys = new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]);
@@ -101,16 +109,38 @@ export default function AuditBrowser() {
           void load(filters, 0);
         }}
       >
-        {(["entity_type", "entity_id", "actor", "kind"] as const).map((k) => (
+        {(["entity_type", "entity_id", "actor"] as const).map((k) => (
           <label key={k} className="text-xs font-bold uppercase tracking-wider text-ink/70">
             {k.replace("_", " ")}
-            <input
-              value={filters[k]}
-              onChange={(ev) => setFilters({ ...filters, [k]: ev.target.value })}
-              className="mt-1 w-36 rounded-sm border-2 border-teal-dark/40 bg-white/60 px-2 py-1 text-sm font-normal text-ink"
-            />
+            {k === "entity_type" ? (
+              <select
+                value={filters.entity_type}
+                onChange={(ev) => setFilters({ ...filters, entity_type: ev.target.value })}
+                className="mt-1 block w-44 rounded-sm border-2 border-teal-dark/40 bg-white/60 px-2 py-1 text-sm font-semibold text-ink"
+              >
+                <option value="">all</option>
+                {ENTITY_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
+              </select>
+            ) : (
+              <input
+                value={filters[k]}
+                onChange={(ev) => setFilters({ ...filters, [k]: ev.target.value })}
+                className="mt-1 block w-36 rounded-sm border-2 border-teal-dark/40 bg-white/60 px-2 py-1 text-sm font-normal text-ink"
+              />
+            )}
           </label>
         ))}
+        <label className="text-xs font-bold uppercase tracking-wider text-ink/70">
+          kind
+          <select
+            value={filters.kind}
+            onChange={(ev) => setFilters({ ...filters, kind: ev.target.value })}
+            className="mt-1 block w-32 rounded-sm border-2 border-teal-dark/40 bg-white/60 px-2 py-1 text-sm font-semibold text-ink"
+          >
+            <option value="">all</option>
+            {KINDS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
         <Btn type="submit">apply</Btn>
       </form>
 
