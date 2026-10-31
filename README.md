@@ -15,9 +15,39 @@ cd backend
 python -m pip install -r requirements.txt
 python seed.py            # wipes DB, imports CSVs from ../dataset, seeds users
 python -m uvicorn app.main:app --reload
+
+# in a second terminal — the browser UI (React/Vite)
+cd ../frontend
+npm install
+npm run dev
 ```
 
-Open http://localhost:8000/docs — health at `/health`.
+Backend API docs: http://localhost:8000/docs — health at `/health`.
+Frontend (FestOS UI): http://localhost:5173 — the vite dev proxy forwards
+`/api/*` to the backend with no CORS setup needed.
+
+### Browser UI walkthrough
+
+The UI is a role-scoped control portal: **Command Center** (KPIs, attention
+inbox, top-right **Upload CSV** button), **Participants / Accommodation /
+Events & Venues / Logistics & Merch / Food Vendors**, and for the director:
+**Disruption Desk, Team & Access, Audit & Decisions**, plus the floating
+**FestOS AI** chatbot on every page.
+
+## CSV data flow (papers not needed on demo day)
+
+- `dataset/` is the data pack; the importer runs against it directly and is
+  idempotent (upserts).
+- **From the browser**: Command Center → **Upload CSV** accepts the data-pack
+  CSVs (`multipart /imports/upload`) *and* judge disruption-scenario CSVs,
+  which are auto-detected (presence of a `disruption_type` column) and routed
+  to `POST /disruptions/scenario-pack` — every row becomes an impact-previewed
+  ticket in the Disruption Desk, ready to apply.
+- A ready-made 9-scenario live-test pack covering all seven disruption types
+  sits at `judge_disruption_live_test.csv` (repo root); its T005 venue-change
+  precondition needs one event scheduled on venue V01 (E01 was staged on it).
+- `POST /imports/upload` without files re-runs the pipeline server-side from
+  `dataset/`; `POST /imports/reset` (director) is the audited full rebuild.
 
 By default the data lives in a local SQLite file (`backend/festos.db`). Setting
 `SUPABASE_DB_URL` in `backend/.env` (Postgres pooler URI, session pooler port
@@ -61,8 +91,10 @@ python -m pytest tests -q
 
 - `/health`
 - `POST /auth/login`, `GET /auth/me`, `GET /auth/admin-only` (role-gate demo)
-- `POST /imports/upload` (run pipeline), `GET /imports/reconciliation`,
-  `GET /imports/issues`, `POST /imports/reset` (director only)
+- `POST /imports/upload` — multipart data-pack CSVs from the browser, or no
+  files = re-run the pipeline against the server-side `dataset/` directory;
+  `GET /imports/reconciliation`, `GET /imports/issues`, `POST /imports/reset`
+  (director only)
 - `GET /participants` (search/filter, role-masked), `GET /participants/{id}`
   (360° record), `POST /participants/{id}/reveal` (audited unmask),
   `PATCH /participants/{id}`, `POST /participants/merge`,
@@ -83,18 +115,22 @@ python -m pytest tests -q
   `.../apply`, `GET /vendors/settlement`
 - Disruptions (director only, every step audited): `POST /disruptions/preview`,
   `POST /disruptions/{id}/apply`, `POST /disruptions/{id}/revert` (full revert
-  snapshot, never guesses), `GET /disruptions`. Types: `late_contingent`,
-  `duplicate_record`, `hostel_closure`, `equipment_failure`, `venue_change`,
-  `vendor_shutdown`, `duplicate_merch_claim` (A-34).
+  snapshot, never guesses), `GET /disruptions`, and
+  `POST /disruptions/scenario-pack` — upload a judge scenario CSV; each row is
+  mapped to an engine payload and auto-previewed into the registry. Types:
+  `late_contingent`, `duplicate_record`, `hostel_closure`, `equipment_failure`,
+  `venue_change`, `vendor_shutdown`, `duplicate_merch_claim` (A-34).
 - Control center (director only): `GET /control/attention` (merged findings
   inbox, severity-sorted), `GET /control/kpis` (occupancy is null until a plan
   is active), `GET /control/audit` (filterable audit browser, A-35).
 - **FestOS AI Operations Assistant** ("Ask your festival operations data"):
   `GET /chatbot/health` (status & provider capabilities), `POST /chatbot/chat`
   (grounded natural-language operations query), `GET /chatbot/conversations`
-  (authorized user history), `GET /chatbot/conversations/{id}` (conversation detail),
-  `POST /chatbot/reindex` (refresh semantic vectors, director only). Complete spec:
-  `docs/CHATBOT_ARCHITECTURE.md`.
+  (authorized user history), `GET /chatbot/conversations/{id}` (conversation
+  detail), `POST /chatbot/reindex` (refresh semantic vectors, director only).
+  Router notes: event-time questions are typo/name-tolerant — "what time is the
+  MUN event" resolves to the scheduled DB fact rather than generic advice.
+  Complete spec: `docs/CHATBOT_ARCHITECTURE.md`.
 
 ## Known limitations
 
