@@ -8,8 +8,9 @@ Authoritative source of truth:
 - Zero hallucinations: unknown or missing stays unknown
 """
 from typing import Any, Optional
+import re
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app import auth as auth_mod
 from app import config as C
@@ -685,11 +686,17 @@ class SQLRetrievalService:
             }
 
         q = event_name_or_id.strip()
-        ev = db.query(Event).filter(
-            (Event.raw_id == q.upper()) |
-            (Event.name.ilike(q)) |
-            (Event.name.ilike(f"%{q}%"))
-        ).first()
+        # "what time is the MUN event scheduled" classifies with target "mun event";
+        # the DB event is usually named without the word "event" (e.g. "MUN").
+        name_shots = re.sub(r"\s+events?$", "", q, flags=re.IGNORECASE).strip()
+        filters = [Event.raw_id == q.upper(), Event.name.ilike(q),
+                   Event.name.ilike(f"%{q}%")]
+        if name_shots and name_shots != q:
+            filters += [Event.name.ilike(name_shots), Event.name.ilike(f"%{name_shots}%")]
+        for word in name_shots.split():
+            if len(word) >= 3:
+                filters.append(Event.name.ilike(f"%{word}%"))
+        ev = db.query(Event).filter(or_(*filters)).first()
 
         if not ev:
             return {

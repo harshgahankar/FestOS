@@ -197,23 +197,23 @@ export default function Shell({ children }: { children?: ReactNode }) {
       <Bunting className="h-8 w-full shrink-0" />
       <div className="flex flex-1 w-full items-stretch gap-4 p-3 sm:p-5 sm:pl-4">
         {/* Sidebar at the left edge of the layout, full height */}
-        <aside className="paper relative hidden w-72 shrink-0 flex-col rounded-md border-2 border-crimson-dark/30 shadow-[0_3px_0_rgba(64,16,18,0.35)] sm:flex select-none">
-          <div className="flex min-h-0 flex-1 flex-col p-4">
+        <aside className="paper relative hidden w-72 shrink-0 flex-col rounded-md border-2 border-crimson-dark/30 shadow-[0_3px_0_rgba(64,16,18,0.35)] sm:flex select-none sticky top-3 max-h-[calc(100vh-1.5rem)] self-start h-[calc(100vh-1.5rem)] overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col p-3 px-4">
             {/* Header: FESTOS / Aarohan 2026 */}
-            <div className="mb-4 px-1 pt-1">
+            <div className="mb-2 px-1 pt-1">
               <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-saffron">
                 FESTOS
               </p>
               <h2 className="font-display text-2xl font-bold tracking-tight text-ink mt-0.5">
                 Aarohan 2026
               </h2>
-              <div className="my-2.5 border-t-2 border-teal-dark/20" />
+              <div className="my-2 border-t-2 border-teal-dark/20" />
             </div>
 
             {/* Nav items, grouped by concern */}
-            <nav className="flex flex-col space-y-4 overflow-y-auto">
+            <nav className="flex flex-col space-y-2.5">
               {groups.map((g) => (
-                <div key={g.label} className="flex flex-col space-y-1">
+                <div key={g.label} className="flex flex-col space-y-0.5">
                   <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-crimson-dark/60">
                     {g.label}
                   </p>
@@ -223,10 +223,10 @@ export default function Shell({ children }: { children?: ReactNode }) {
                       to={n.path}
                       end={n.path === "/"}
                       className={({ isActive }) =>
-                        `group flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-all ${
+                        `group flex items-center gap-3 px-3 py-1.5 rounded-sm text-sm transition-all ${
                           isActive
                             ? "bg-mustard text-ink font-bold shadow-xs border-2 border-mustard-dark/40 ring-1 ring-mustard/30"
-                            : "text-ink/80 hover:text-ink hover:bg-teal/20 font-semibold"
+                            : "text-ink/80 hover:text-ink hover:bg-teal/20 font-semibold border-2 border-transparent"
                         }`
                       }
                     >
@@ -250,27 +250,27 @@ export default function Shell({ children }: { children?: ReactNode }) {
             </nav>
 
             {/* Festival status card fills the gap below nav */}
-            <div className="mt-auto pt-5 px-1">
-              <div className="rounded-sm border-2 border-teal-dark/25 bg-teal/10 p-2.5">
+            <div className="mt-auto pt-3 px-1">
+              <div className="rounded-sm border-2 border-teal-dark/25 bg-teal/10 p-2">
                 <div className="flex items-center justify-between">
                   <span className="rounded-sm bg-teal/25 px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-teal-dark">
                     live
                   </span>
                   <span className="h-1.5 w-1.5 rounded-full bg-teal animate-pulse" />
                 </div>
-                <p className="mt-1.5 font-display text-xl font-extrabold leading-none text-ink">
+                <p className="mt-1 font-display text-lg font-extrabold leading-none text-ink">
                   {day.label}
                 </p>
-                <p className="mt-1 text-[11px] text-ink/60">
+                <p className="mt-0.5 text-[11px] text-ink/60">
                   Oct 30 – Nov 1 · 10 venues
                 </p>
-                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-ink/10">
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-saffron to-crimson"
                     style={{ width: `${day.progress}%` }}
                   />
                 </div>
-                <div className="mt-2 flex justify-between">
+                <div className="mt-1.5 flex justify-between">
                   {[1, 2, 3].map((d) => (
                     <span
                       key={d}
@@ -289,10 +289,8 @@ export default function Shell({ children }: { children?: ReactNode }) {
           </div>
 
           {/* User profile & sign out footer */}
-
-          {/* User profile & sign out footer */}
           {user && (
-            <div className="border-t-2 border-crimson-dark/20 pt-3.5 mt-5 px-1">
+            <div className="mt-3 border-t-2 border-crimson-dark/20 px-4 pt-2.5 pb-3">
               <p className="text-sm font-bold text-ink leading-tight">
                 {formatRoleName(user.role)}
               </p>
@@ -304,9 +302,9 @@ export default function Shell({ children }: { children?: ReactNode }) {
                   logout();
                   nav("/login", { replace: true });
                 }}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-sm border-2 border-crimson-dark/50 bg-white/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-crimson-deep hover:bg-crimson-dark/10 transition active:translate-y-px cursor-pointer"
+                className="group mt-3 flex w-full items-center justify-center gap-2 rounded-sm border-2 border-crimson-dark/40 bg-gradient-to-b from-crimson-dark to-crimson-deep px-3 py-2 text-xs font-bold uppercase tracking-wider text-cream shadow-[0_2px_0_rgba(64,16,18,0.35)] transition hover:from-crimson-deep hover:to-crimson-dark/90 hover:border-saffron/60 active:translate-y-px active:shadow-none cursor-pointer"
               >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <svg className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />
@@ -390,7 +388,7 @@ export default function Shell({ children }: { children?: ReactNode }) {
               logout();
               nav("/login", { replace: true });
             }}
-            className="rounded-sm px-2 py-1 text-xs font-bold text-crimson-deep hover:bg-crimson-dark/10 transition"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-crimson-deep bg-crimson-deep px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-cream transition hover:bg-crimson-dark"
           >
             Sign out
           </button>

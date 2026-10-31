@@ -137,10 +137,22 @@ class IntentRouter:
             r"(?:at\s+what\s+time|what\s+time|when)\s+(?:does|will|is)?\s*(?:the\s+)?(.*?)\s*(?:start|begin|commence|scheduled)",
             norm
         )
-        if time_query_match or (("what time" in norm or "at what time" in norm or "when does" in norm) and ("start" in norm or "begin" in norm)):
-            raw_event = time_query_match.group(1).strip() if time_query_match else ""
-            # Clean filler words
+        # Verb-less variant ("what time is the MUN event", "when is the MUN event")
+        name_time_match = re.search(
+            r"(?:what\s+time|when|at\s+what\s+time)\s+(?:is|does|will|for|was)?\s*(?:the\s+)?(.*?)\s*event\b",
+            norm
+        )
+        if time_query_match or name_time_match or (("what time" in norm or "at what time" in norm or "when does" in norm) and ("start" in norm or "begin" in norm)):
+            if time_query_match:
+                raw_event = time_query_match.group(1).strip()
+            elif name_time_match:
+                raw_event = name_time_match.group(1).strip()
+            else:
+                raw_event = ""
+            # Clean filler words and the trailing "event(s)" the phrasing added
             clean_event = re.sub(r"^(the|an|our)\s+", "", raw_event).strip()
+            if len(clean_event.split()) >= 2 or "event" in clean_event:
+                clean_event = re.sub(r"\s+events?$", "", clean_event, flags=re.IGNORECASE).strip()
 
             if clean_event in ("", "event", "the event", "program", "session") and not entities.get("event_id"):
                 # Ambiguous: user did not identify the event
